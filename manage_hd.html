@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manajemen User HD</title>
+  <title>Manajemen User HD - Helpdesk Productivity</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 min-h-screen">
 
   <div class="max-w-7xl mx-auto p-6">
+    <!-- Header -->
     <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-2xl font-bold text-slate-800">Manajemen User HD</h1>
@@ -17,6 +18,7 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
       <!-- Form Input / Edit User -->
       <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 h-fit">
         <h2 id="formTitle" class="text-lg font-semibold text-slate-800 mb-4">Tambah User HD Baru</h2>
@@ -95,6 +97,7 @@
           </table>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -105,6 +108,8 @@
 
     async function loadUsers() {
       const userTableBody = document.getElementById('userTableBody');
+      userTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">Memuat data...</td></tr>`;
+
       try {
         const res = await fetch('/api/users');
         const users = await res.json();
@@ -144,7 +149,7 @@
         });
       } catch (err) {
         console.error(err);
-        userTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-red-500">Gagal mengambil data.</td></tr>`;
+        userTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-red-500">Gagal mengambil data dari server API.</td></tr>`;
       }
     }
 
@@ -199,7 +204,7 @@
       document.getElementById('username').value = username;
       document.getElementById('password').value = password;
       document.getElementById('segmen').value = segmen;
-      document.getElementById('id_telegram').value = id_telegram === 'undefined' ? '' : id_telegram;
+      document.getElementById('id_telegram').value = (id_telegram === 'undefined' || id_telegram === 'null') ? '' : id_telegram;
       document.getElementById('status').value = status;
 
       document.getElementById('formTitle').innerText = 'Edit User HD';
@@ -208,7 +213,7 @@
     }
 
     async function deleteUser(id) {
-      if (confirm('Yakin hapus user ini?')) {
+      if (confirm('Yakin ingin menghapus user HD ini?')) {
         await fetch(`/api/users?id=${id}`, { method: 'DELETE' });
         loadUsers();
       }
