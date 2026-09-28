@@ -1,5 +1,6 @@
 const admin = require('firebase-admin');
 
+// Inisialisasi Firebase Admin
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -9,15 +10,15 @@ if (!admin.apps.length) {
         ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
         : undefined,
     }),
-    databaseURL: "https://proyeksaya-74320-default-rtdb.asia-southeast1.firebasedatabase.app"
   });
 }
 
-const db = admin.database();
+const db = admin.firestore();
 
 module.exports = async (req, res) => {
   const { method } = req;
 
+  // Header CORS agar halaman HTML bisa mengakses API ini
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -27,30 +28,26 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const ref = db.ref('users_hd');
-
     // A. BACA ALL USERS (GET)
     if (method === 'GET') {
-      const snapshot = await ref.once('value');
-      const data = snapshot.val();
-      const users = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+      const snapshot = await db.collection('users_hd').orderBy('timestamp_created', 'desc').get();
+      const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       return res.status(200).json(users);
     }
 
     // B. TAMBAH USER BARU (POST)
     if (method === 'POST') {
       const data = req.body;
-      data.timestamp_created = Date.now();
-      const newRef = ref.push();
-      await newRef.set(data);
-      return res.status(200).json({ id: newRef.key, message: 'User HD berhasil ditambahkan' });
+      data.timestamp_created = admin.firestore.FieldValue.serverTimestamp();
+      const docRef = await db.collection('users_hd').add(data);
+      return res.status(200).json({ id: docRef.id, message: 'User HD berhasil ditambahkan' });
     }
 
     // C. UPDATE USER (PUT)
     if (method === 'PUT') {
       const { id, ...data } = req.body;
       if (!id) return res.status(400).json({ error: 'ID User diperlukan' });
-      await ref.child(id).update(data);
+      await db.collection('users_hd').doc(id).update(data);
       return res.status(200).json({ message: 'User HD berhasil diperbarui' });
     }
 
@@ -58,7 +55,7 @@ module.exports = async (req, res) => {
     if (method === 'DELETE') {
       const { id } = req.query;
       if (!id) return res.status(400).json({ error: 'ID User diperlukan' });
-      await ref.child(id).remove();
+      await db.collection('users_hd').doc(id).delete();
       return res.status(200).json({ message: 'User HD berhasil dihapus' });
     }
 
