@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen User HD - Helpdesk Productivity</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase SDK versi 9 (Modular via CDN) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy 
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    // KREDENSIAL FIREBASE
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Inisialisasi Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Variabel Global
+    let currentEditId = null;
+
+    // Load Data Saat Halaman Dimuat
+    window.addEventListener('DOMContentLoaded', () => {
+      loadUsers();
+    });
+
+    // Fungsi Render / Load Data User
+    async function loadUsers() {
+      const userTableBody = document.getElementById('userTableBody');
+      userTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">Memuat data...</td></tr>`;
+
+      try {
+        const q = query(collection(db, "users_hd"), orderBy("timestamp_created", "desc"));
+        const querySnapshot = await getDocs(q);
+        
+        userTableBody.innerHTML = "";
+        if (querySnapshot.empty) {
+          userTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">Belum ada data user HD.</td></tr>`;
+          return;
+        }
+
+        querySnapshot.forEach((docSnap) => {
+          const u = docSnap.data();
+          const row = document.createElement('tr');
+          row.className = "border-b hover:bg-gray-50 text-sm text-gray-700";
+
+          // Badge Segmen
+          let segmenBadge = 'bg-gray-100 text-gray-800';
+          if (u.segmen === 'B2C') segmenBadge = 'bg-blue-100 text-blue-800';
+          if (u.segmen === 'B2B') segmenBadge = 'bg-green-100 text-green-800';
+          if (u.segmen === 'PROVI') segmenBadge = 'bg-purple-100 text-purple-800';
+          if (u.segmen === 'ALL') segmenBadge = 'bg-amber-100 text-amber-800';
+
+          row.innerHTML = `
+            <td class="px-4 py-3 font-semibold">${u.nik || '-'}</td>
+            <td class="px-4 py-3">${u.nama || '-'}</td>
+            <td class="px-4 py-3">${u.username || '-'}</td>
+            <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${segmenBadge}">${u.segmen || '-'}</span></td>
+            <td class="px-4 py-3">${u.id_telegram || '-'}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-1 rounded-full text-xs font-semibold ${u.status === 'aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+                ${u.status || 'aktif'}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-center space-x-2">
+              <button onclick="editUser('${docSnap.id}', '${u.nik}', '${u.nama}', '${u.username}', '${u.password}', '${u.segmen}', '${u.id_telegram}', '${u.status}')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-xs">Edit</button>
+              <button onclick="deleteUser('${docSnap.id}')" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Hapus</button>
+            </td>
+          `;
+          userTableBody.appendChild(row);
+        });
+      } catch (err) {
+        console.error("Error loading users:", err);
+        userTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-red-500">Gagal mengambil data. Periksa konsol browser/Firebase config.</td></tr>`;
+      }
+    }
+
+    // Submit Form (Simpan / Edit)
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const nik = document.getElementById('nik').value;
+      const nama = document.getElementById('nama').value;
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const segmen = document.getElementById('segmen').value;
+      const id_telegram = document.getElementById('id_telegram').value;
+      const status = document.getElementById('status').value;
+
+      const payload = {
+        nik, nama, username, password, segmen, id_telegram, status
+      };
+
+      try {
+        if (currentEditId) {
+          // Process Edit
+          const docRef = doc(db, "users_hd", currentEditId);
+          await updateDoc(docRef, payload);
+          alert('Data User HD berhasil diperbarui!');
+        } else {
+          // Process Tambah Baru
+          payload.timestamp_created = serverTimestamp();
+          await addDoc(collection(db, "users_hd"), payload);
+          alert('User HD Baru berhasil ditambahkan!');
+        }
+
+        resetForm();
+        loadUsers();
+      } catch (err) {
+        console.error("Error saving user:", err);
+        alert("Gagal menyimpan data user!");
+      }
+    });
+
+    // Function Reset Form
+    window.resetForm = function() {
+      currentEditId = null;
+      document.getElementById('userForm').reset();
+      document.getElementById('formTitle').innerText = 'Tambah User HD Baru';
+      document.getElementById('btnSubmit').innerText = 'Simpan User';
+      document.getElementById('btnCancel').classList.add('hidden');
+    };
+
+    // Function Pre-fill Form Edit
+    window.editUser = function(id, nik, nama, username, password, segmen, id_telegram, status) {
+      currentEditId = id;
+      document.getElementById('nik').value = nik;
+      document.getElementById('nama').value = nama;
+      document.getElementById('username').value = username;
+      document.getElementById('password').value = password;
+      document.getElementById('segmen').value = segmen;
+      document.getElementById('id_telegram').value = id_telegram === 'undefined' ? '' : id_telegram;
+      document.getElementById('status').value = status;
+
+      document.getElementById('formTitle').innerText = 'Edit User HD';
+      document.getElementById('btnSubmit').innerText = 'Update User';
+      document.getElementById('btnCancel').classList.remove('hidden');
+    };
+
+    // Function Delete User
+    window.deleteUser = function(id) {
+      if (confirm('Apakah Anda yakin ingin menghapus user HD ini?')) {
+        const docRef = doc(db, "users_hd", id);
+        deleteDoc(docRef)
+          .then(() => {
+            alert('User berhasil dihapus!');
+            loadUsers();
+          })
+          .catch((err) => {
+            console.error("Error deleting user:", err);
+            alert('Gagal menghapus user!');
+          });
+      }
+    };
+  </script>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800">Manajemen User HD</h1>
+        <p class="text-sm text-slate-500">Kelola akun dan hak akses segmen unit petugas Helpdesk</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Form Input / Edit User -->
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 h-fit">
+        <h2 id="formTitle" class="text-lg font-semibold text-slate-800 mb-4">Tambah User HD Baru</h2>
+        
+        <form id="userForm" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">NIK</label>
+            <input type="text" id="nik" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan NIK">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nama Lengkap</label>
+            <input type="text" id="nama" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nama Petugas HD">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Username</label>
+              <input type="text" id="username" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Username">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Password</label>
+              <input type="password" id="password" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Password">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Segmen / Unit HD</label>
+            <select id="segmen" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="B2C">B2C (#moban)</option>
+              <option value="B2B">B2B (#helprekan)</option>
+              <option value="PROVI">PROVI (#tolong)</option>
+              <option value="ALL">ALL (Akses Semua Unit)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">ID Telegram (Opsional)</label>
+            <input type="text" id="id_telegram" class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: 123456789">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Status Akun</label>
+            <select id="status" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="aktif">Aktif</option>
+              <option value="nonaktif">Nonaktif</option>
+            </select>
+          </div>
+
+          <div class="pt-2 flex gap-2">
+            <button type="submit" id="btnSubmit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded text-sm transition">Simpan User</button>
+            <button type="button" id="btnCancel" onclick="resetForm()" class="hidden bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-4 py-2 rounded text-sm transition">Batal</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabel Daftar User HD -->
+      <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-800 mb-4">Daftar Petugas HD</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100 text-xs text-slate-600 uppercase border-b">
+                <th class="px-4 py-3">NIK</th>
+                <th class="px-4 py-3">Nama</th>
+                <th class="px-4 py-3">Username</th>
+                <th class="px-4 py-3">Segmen</th>
+                <th class="px-4 py-3">ID Telegram</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="userTableBody">
+              <!-- Data dimasukkan secara dinamis via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>
