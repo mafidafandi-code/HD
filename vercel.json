@@ -14,6 +14,14 @@
     {
       "src": "/api/users",
       "dest": "api/users.js"
+    },
+    {
+      "src": "/manage_hd",
+      "dest": "/manage_hd.html"
+    },
+    {
+      "src": "/",
+      "dest": "/manage_hd.html"
     }
   ]
 }
