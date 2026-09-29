@@ -1,28 +1,12 @@
-import admin from 'firebase-admin';
+import { db, admin } from './_firebase.js';
 import formidable from 'formidable';
 import fs from 'fs';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 
 export const config = {
-  api: {
-    bodyParser: false, // Untuk upload gambar lewat Form-Data
-  },
+  api: { bodyParser: false }
 };
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY
-        ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-        : undefined,
-    }),
-  });
-}
-
-const db = admin.firestore();
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
@@ -53,11 +37,9 @@ export default async function handler(req, res) {
     let file_id = null;
 
     try {
-      // Format pesan dengan identitas HD
       const textWithHeader = `💬 *Balasan HD (${hd_nama}):*\n\n${pesan}`;
 
       if (file) {
-        // Send Photo ke Telegram
         const formData = new FormData();
         formData.append('chat_id', chat_id);
         formData.append('reply_to_message_id', parent_message_id);
@@ -71,7 +53,6 @@ export default async function handler(req, res) {
           body: formData,
         });
       } else {
-        // Send Text biasa ke Telegram
         telegramRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -87,17 +68,16 @@ export default async function handler(req, res) {
 
       const tgResult = await telegramRes.json();
       if (!tgResult.ok) {
-        return res.status(500).json({ error: 'Gagal mengirim pesan ke Telegram: ' + tgResult.description });
+        return res.status(500).json({ error: 'Gagal mengirim pesan Telegram: ' + tgResult.description });
       }
 
       sentMessageId = tgResult.result.message_id;
-
       if (tgResult.result.photo) {
         const photos = tgResult.result.photo;
         file_id = photos[photos.length - 1].file_id;
       }
 
-      // 1. Simpan dokumen BALASAN di tabel `permintaan`
+      // Simpan Balasan ke `permintaan`
       const newReplyRef = db.collection('permintaan').doc();
       const replyData = {
         id_permintaan: newReplyRef.id,
@@ -125,7 +105,7 @@ export default async function handler(req, res) {
       };
       await newReplyRef.set(replyData);
 
-      // 2. Update status Tiket Utama ke 'PROGRESS' & catat timestamp_taken
+      // Update status Tiket Utama ke PROGRESS & timestamp_taken
       const mainTicketSnapshot = await db.collection('permintaan')
         .where('tiket_id', '==', tiket_id)
         .where('msg_type', '==', 'UTAMA')
@@ -147,7 +127,6 @@ export default async function handler(req, res) {
 
       return res.status(200).json({ success: true, message: 'Balasan terkirim' });
     } catch (e) {
-      console.error(e);
       return res.status(500).json({ error: e.message });
     }
   });
