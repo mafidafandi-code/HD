@@ -30,7 +30,8 @@ export default async function handler(req, res) {
   }
 
   // 1. Ambil token (GANTI STRING HARDCODE JIKA DIBUTUHKAN Cepat)
-  const token = process.env.TELEGRAM_BOT_TOKEN;
+  //const token = process.env.TELEGRAM_BOT_TOKEN;
+  const token = process.env.TELEGRAM_BOT_TOKEN || '8772387175:AAEB_JYpOSDWJTuIya3yLsSqohCL8i4mTOw';
 
   // Jika token kosong, langsung cegah eksekusi Telegraf agar tidak crash 401
   if (!token || token.trim() === '') {
