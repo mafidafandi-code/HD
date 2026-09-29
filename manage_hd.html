@@ -45,7 +45,7 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Username</label>
-          <input type="text" id="username" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Contoh: ahmad_hd">
+          <input type="text" id="username" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Contoh: kk">
         </div>
 
         <div>
@@ -102,7 +102,7 @@
             </tr>
           </thead>
           <tbody id="user-table-body" class="divide-y divide-slate-100">
-            <!-- Data dirender dari API -->
+            <!-- Data dirender via API -->
           </tbody>
         </table>
       </div>
@@ -110,14 +110,13 @@
 
   </div>
 
-  <!-- SCRIPT INTEGRASI KE API -->
   <script>
     const userForm = document.getElementById('user-form');
     const tableBody = document.getElementById('user-table-body');
     const totalUsersBadge = document.getElementById('total-users');
     const btnSubmit = document.getElementById('btn-submit');
 
-    // 1. BACA USER DARI BACKEND
+    // 1. TAMPILKAN USER
     async function loadUsers() {
       try {
         const res = await fetch('/api/manage_hd');
@@ -177,7 +176,7 @@
         password: document.getElementById('password').value.trim(),
         segmen: document.getElementById('segmen').value.trim(),
         status: document.getElementById('status').value,
-        id_telegram: document.getElementById('id_telegram').value.trim() || ''
+        id_telegram: document.getElementById('id_telegram').value.trim()
       };
 
       btnSubmit.disabled = true;
@@ -190,14 +189,18 @@
           body: JSON.stringify(payload)
         });
 
-        if (!res.ok) throw new Error('Gagal menyimpan');
+        const result = await res.json();
+
+        if (!res.ok) {
+          throw new Error(result.error || 'Gagal menyimpan');
+        }
 
         alert('User HD Berhasil Ditambahkan!');
         userForm.reset();
         loadUsers();
       } catch (err) {
         console.error(err);
-        alert('Terjadi kesalahan saat menyimpan data!');
+        alert('Gagal: ' + err.message);
       } finally {
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Simpan User HD`;
