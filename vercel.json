@@ -1,27 +1,21 @@
 {
-  "version": "2",
-  "builds": [
+  "version": 2,
+  "rewrites": [
     {
-      "src": "api/*.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/bot",
-      "dest": "api/bot.js"
+      "source": "/api/bot",
+      "destination": "/api/bot.js"
     },
     {
-      "src": "/api/users",
-      "dest": "api/users.js"
+      "source": "/api/users",
+      "destination": "/api/users.js"
     },
     {
-      "src": "/manage_hd",
-      "dest": "/manage_hd.html"
+      "source": "/manage_hd",
+      "destination": "/manage_hd.html"
     },
     {
-      "src": "/",
-      "dest": "/manage_hd.html"
+      "source": "/",
+      "destination": "/manage_hd.html"
     }
   ]
 }
