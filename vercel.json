@@ -10,7 +10,7 @@
     },
     {
       "source": "/api/manage_hd",
-      "destination": "/api/manage_hd.js"
+  "destination": "/api/manage_hd.cjs"
     },
     {
       "source": "/manage_hd",
