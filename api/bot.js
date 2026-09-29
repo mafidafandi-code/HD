@@ -16,7 +16,6 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Deteksi segmen hashtag
 function detectSegmen(text = '') {
   const lower = text.toLowerCase();
   if (lower.includes('#moban')) return { code: 'B2C', tag: '#moban' };
@@ -30,19 +29,22 @@ export default async function handler(req, res) {
     return res.status(200).send('Telegram Bot Webhook Endpoint Ready');
   }
 
-  // 1. Ambil token dari Environment Variable Vercel
-  // Jika variabel Vercel gagal terbaca, ganti string di bawah dengan Token Botfather Anda secara langsung (sebagai Fallback)
-  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8772387175:AAEB_JYpOSDWJTuIya3yLsSqohCL8i4mTOw';
+  // 1. Ambil token (GANTI STRING HARDCODE JIKA DIBUTUHKAN Cepat)
+  const token = process.env.TELEGRAM_BOT_TOKEN;
 
-  if (!BOT_TOKEN || BOT_TOKEN.includes('8772387175:AAEB_JYpOSDWJTuIya3yLsSqohCL8i4mTOw')) {
-    console.error('CRITICAL ERROR: Token Telegram tidak ditemukan!');
-    return res.status(500).json({ error: 'Token Telegram belum diatur dengan benar.' });
+  // Jika token kosong, langsung cegah eksekusi Telegraf agar tidak crash 401
+  if (!token || token.trim() === '') {
+    console.error('CRITICAL: TELEGRAM_BOT_TOKEN kosong!');
+    return res.status(500).json({ 
+      status: 'error', 
+      message: 'TELEGRAM_BOT_TOKEN tidak terdeteksi di Environment Variable Vercel.' 
+    });
   }
 
   // 2. Inisialisasi Telegraf
-  const bot = new Telegraf(BOT_TOKEN);
+  const bot = new Telegraf(token);
 
-  // 3. Handler Logika Bot
+  // 3. Handler Logika Bot Telegram
   bot.on(['text', 'photo', 'video', 'document'], async (ctx) => {
     try {
       const message = ctx.message;
@@ -137,12 +139,16 @@ export default async function handler(req, res) {
     }
   });
 
-  // Eksekusi Webhook
+  // 4. Jalankan Webhook tanpa memanggil API verifikasi getMe
   try {
-    await bot.handleUpdate(req.body);
-    return res.status(200).json({ ok: true });
+    await bot.handleUpdate(req.body, res);
+    if (!res.headersSent) {
+      return res.status(200).json({ ok: true });
+    }
   } catch (err) {
     console.error('Webhook Handling Error:', err);
-    return res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: err.message });
+    }
   }
 }
