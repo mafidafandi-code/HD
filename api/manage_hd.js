@@ -1,12 +1,13 @@
+// api/manage_hd.js
 const admin = require('firebase-admin');
 
-// Fungsi pembersih format Private Key dari Vercel
+// Pembersih Private Key dari Vercel Environment Variable
 const parsePrivateKey = (key) => {
   if (!key) return undefined;
   return key.replace(/\\n/g, '\n').replace(/"/g, '');
 };
 
-// Inisialisasi Firebase Admin
+// Inisialisasi Firebase
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -24,30 +25,28 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 module.exports = async (req, res) => {
-  const { method } = req;
-
-  // Header CORS
+  // Paksa response berupa JSON
+  res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (method === 'OPTIONS') {
+  if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   try {
-    // A. READ / BACA DATA (GET)
-    if (method === 'GET') {
-      const snapshot = await db.collection('users_hd').orderBy('timestamp_created', 'desc').get();
+    // 1. GET ALL USERS (Tanpa orderBy agar tidak dipaksa buat Index Firestore)
+    if (req.method === 'GET') {
+      const snapshot = await db.collection('users_hd').get();
       const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       return res.status(200).json(users);
     }
 
-    // B. CREATE / TAMBAH USER (POST)
-    if (method === 'POST') {
+    // 2. TAMBAH USER (POST)
+    if (req.method === 'POST') {
       const body = req.body || {};
 
-      // Pastikan string aman (mencegah undefined error di Firestore)
       const payload = {
         nik: String(body.nik || ''),
         nama: String(body.nama || ''),
@@ -56,27 +55,27 @@ module.exports = async (req, res) => {
         segmen: String(body.segmen || ''),
         status: String(body.status || 'aktif'),
         id_telegram: String(body.id_telegram || ''),
-        timestamp_created: admin.firestore.FieldValue.serverTimestamp()
+        created_at: new Date().toISOString() // Menggunakan ISO string standar
       };
 
       const docRef = await db.collection('users_hd').add(payload);
-      return res.status(200).json({ id: docRef.id, message: 'User HD berhasil ditambahkan' });
+      return res.status(200).json({ success: true, id: docRef.id, message: 'User berhasil disimpan' });
     }
 
-    // C. DELETE / HAPUS USER (DELETE)
-    if (method === 'DELETE') {
+    // 3. HAPUS USER (DELETE)
+    if (req.method === 'DELETE') {
       const { id } = req.query;
-      if (!id) return res.status(400).json({ error: 'ID User diperlukan' });
+      if (!id) return res.status(400).json({ error: 'ID User tidak ditemukan' });
+
       await db.collection('users_hd').doc(id).delete();
-      return res.status(200).json({ message: 'User HD berhasil dihapus' });
+      return res.status(200).json({ success: true, message: 'User berhasil dihapus' });
     }
 
-    res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-    return res.status(405).json({ error: `Method ${method} Not Allowed` });
+    return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
 
   } catch (err) {
-    console.error('Error di Serverless API:', err);
-    // Return JSON error agar tidak keluar teks 'Unexpected token' di frontend
-    return res.status(500).json({ error: err.message || 'Terjadi kesalahan pada server Firebase' });
+    console.error('Server execution error:', err);
+    // Return JSON persis agar alert di browser menampilkan pesan error resminya
+    return res.status(500).json({ error: err.message || 'Terjadi kesalahan pada Firebase Server' });
   }
 };
