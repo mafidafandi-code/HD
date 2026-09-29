@@ -3,221 +3,108 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manajemen User HD - Helpdesk Productivity</title>
+  <title>Manajemen User HD</title>
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-100 min-h-screen">
+<body class="bg-slate-100 font-sans text-slate-800 p-4 md:p-8">
 
-  <div class="max-w-7xl mx-auto p-6">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-800">Manajemen User HD</h1>
-        <p class="text-sm text-slate-500">Kelola akun dan hak akses segmen unit petugas Helpdesk</p>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      <!-- Form Input / Edit User -->
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 h-fit">
-        <h2 id="formTitle" class="text-lg font-semibold text-slate-800 mb-4">Tambah User HD Baru</h2>
-        
-        <form id="userForm" class="space-y-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">NIK</label>
-            <input type="text" id="nik" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan NIK">
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nama Lengkap</label>
-            <input type="text" id="nama" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nama Petugas HD">
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Username</label>
-              <input type="text" id="username" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Username">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Password</label>
-              <input type="password" id="password" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Password">
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Segmen / Unit HD</label>
-            <select id="segmen" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="B2C">B2C (#moban)</option>
-              <option value="B2B">B2B (#helprekan)</option>
-              <option value="PROVI">PROVI (#tolong)</option>
-              <option value="ALL">ALL (Akses Semua Unit)</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">ID Telegram (Opsional)</label>
-            <input type="text" id="id_telegram" class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: 123456789">
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Status Akun</label>
-            <select id="status" required class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="aktif">Aktif</option>
-              <option value="nonaktif">Nonaktif</option>
-            </select>
-          </div>
-
-          <div class="pt-2 flex gap-2">
-            <button type="submit" id="btnSubmit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded text-sm transition">Simpan User</button>
-            <button type="button" id="btnCancel" onclick="resetForm()" class="hidden bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-4 py-2 rounded text-sm transition">Batal</button>
-          </div>
-        </form>
-      </div>
-
-      <!-- Tabel Daftar User HD -->
-      <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-        <h2 class="text-lg font-semibold text-slate-800 mb-4">Daftar Petugas HD</h2>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="bg-slate-100 text-xs text-slate-600 uppercase border-b">
-                <th class="px-4 py-3">NIK</th>
-                <th class="px-4 py-3">Nama</th>
-                <th class="px-4 py-3">Username</th>
-                <th class="px-4 py-3">Segmen</th>
-                <th class="px-4 py-3">ID Telegram</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3 text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="userTableBody">
-              <tr><td colspan="7" class="text-center py-4 text-gray-500">Memuat data...</td></tr>
-            </tbody>
-          </table>
+  <div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- HEADER -->
+    <div class="flex items-center justify-between bg-slate-900 text-white p-5 rounded-2xl shadow-md">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid fa-user-gear"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold">Manajemen User HD</h1>
+          <p class="text-xs text-slate-400">Tambah dan kelola akun Petugas Helpdesk</p>
         </div>
       </div>
-
+      <a href="dashboard_hd.html" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+        <i class="fa-solid fa-chart-line"></i> Buka Dashboard
+      </a>
     </div>
+
+    <!-- FORM INPUT USER -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <h2 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-user-plus text-indigo-600"></i> Form Tambah User HD Baru
+      </h2>
+
+      <form id="user-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">NIK HD</label>
+          <input type="text" id="nik-hd" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-xs transition" placeholder="Contoh: HD001">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Petugas HD</label>
+          <input type="text" id="nama-hd" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-xs transition" placeholder="Contoh: Ahmad Rizki">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+          <input type="password" id="password-hd" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-xs transition" placeholder="••••••••">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Segmen / Unit</label>
+          <select id="segmen-hd" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-xs transition">
+            <option value="">-- Pilih Segmen --</option>
+            <option value="DPE">DPE</option>
+            <option value="DES">DES</option>
+            <option value="DGS">DGS</option>
+            <option value="DBS">DBS</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">ID Telegram (Opsional)</label>
+          <input type="text" id="telegram-hd" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-xs transition" placeholder="Contoh: 123456789">
+        </div>
+
+        <div class="md:col-span-2 pt-2">
+          <button type="submit" id="btn-submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-semibold rounded-lg text-xs shadow transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan User HD
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- TABEL DAFTAR USER -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-users text-indigo-600"></i> Daftar Akun HD Terdaftar
+        </h3>
+        <span id="total-users" class="px-2 py-0.5 bg-indigo-100 text-indigo-700 font-bold rounded-full text-[10px]">Total: 0</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-600">
+          <thead class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px]">
+            <tr>
+              <th class="p-3">NIK</th>
+              <th class="p-3">Nama</th>
+              <th class="p-3">Segmen</th>
+              <th class="p-3">ID Telegram</th>
+              <th class="p-3 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="user-table-body" class="divide-y divide-slate-100">
+            <!-- Data user dirender via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
-  <script>
-    let currentEditId = null;
-
-    document.addEventListener('DOMContentLoaded', loadUsers);
-
-    async function loadUsers() {
-      const userTableBody = document.getElementById('userTableBody');
-      userTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">Memuat data...</td></tr>`;
-
-      try {
-        const res = await fetch('/api/users');
-        const users = await res.json();
-        
-        userTableBody.innerHTML = '';
-        if (!users || users.length === 0) {
-          userTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">Belum ada data user HD.</td></tr>`;
-          return;
-        }
-
-        users.forEach(u => {
-          let segmenBadge = 'bg-gray-100 text-gray-800';
-          if (u.segmen === 'B2C') segmenBadge = 'bg-blue-100 text-blue-800';
-          if (u.segmen === 'B2B') segmenBadge = 'bg-green-100 text-green-800';
-          if (u.segmen === 'PROVI') segmenBadge = 'bg-purple-100 text-purple-800';
-          if (u.segmen === 'ALL') segmenBadge = 'bg-amber-100 text-amber-800';
-
-          const row = document.createElement('tr');
-          row.className = "border-b hover:bg-gray-50 text-sm text-gray-700";
-          row.innerHTML = `
-            <td class="px-4 py-3 font-semibold">${u.nik || '-'}</td>
-            <td class="px-4 py-3">${u.nama || '-'}</td>
-            <td class="px-4 py-3">${u.username || '-'}</td>
-            <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-semibold ${segmenBadge}">${u.segmen || '-'}</span></td>
-            <td class="px-4 py-3">${u.id_telegram || '-'}</td>
-            <td class="px-4 py-3">
-              <span class="px-2 py-1 rounded-full text-xs font-semibold ${u.status === 'aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
-                ${u.status || 'aktif'}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-center space-x-2">
-              <button onclick="editUser('${u.id}', '${u.nik}', '${u.nama}', '${u.username}', '${u.password}', '${u.segmen}', '${u.id_telegram}', '${u.status}')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-xs">Edit</button>
-              <button onclick="deleteUser('${u.id}')" class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">Hapus</button>
-            </td>
-          `;
-          userTableBody.appendChild(row);
-        });
-      } catch (err) {
-        console.error(err);
-        userTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-red-500">Gagal mengambil data dari server API.</td></tr>`;
-      }
-    }
-
-    document.getElementById('userForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const payload = {
-        nik: document.getElementById('nik').value,
-        nama: document.getElementById('nama').value,
-        username: document.getElementById('username').value,
-        password: document.getElementById('password').value,
-        segmen: document.getElementById('segmen').value,
-        id_telegram: document.getElementById('id_telegram').value,
-        status: document.getElementById('status').value
-      };
-
-      try {
-        if (currentEditId) {
-          payload.id = currentEditId;
-          await fetch('/api/users', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          alert('User berhasil diperbarui!');
-        } else {
-          await fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          alert('User berhasil ditambahkan!');
-        }
-        resetForm();
-        loadUsers();
-      } catch (err) {
-        alert('Gagal menyimpan data!');
-      }
-    });
-
-    function resetForm() {
-      currentEditId = null;
-      document.getElementById('userForm').reset();
-      document.getElementById('formTitle').innerText = 'Tambah User HD Baru';
-      document.getElementById('btnSubmit').innerText = 'Simpan User';
-      document.getElementById('btnCancel').classList.add('hidden');
-    }
-
-    function editUser(id, nik, nama, username, password, segmen, id_telegram, status) {
-      currentEditId = id;
-      document.getElementById('nik').value = nik;
-      document.getElementById('nama').value = nama;
-      document.getElementById('username').value = username;
-      document.getElementById('password').value = password;
-      document.getElementById('segmen').value = segmen;
-      document.getElementById('id_telegram').value = (id_telegram === 'undefined' || id_telegram === 'null') ? '' : id_telegram;
-      document.getElementById('status').value = status;
-
-      document.getElementById('formTitle').innerText = 'Edit User HD';
-      document.getElementById('btnSubmit').innerText = 'Update User';
-      document.getElementById('btnCancel').classList.remove('hidden');
-    }
-
-    async function deleteUser(id) {
-      if (confirm('Yakin ingin menghapus user HD ini?')) {
-        await fetch(`/api/users?id=${id}`, { method: 'DELETE' });
-        loadUsers();
-      }
-    }
-  </script>
+  <!-- SCRIPT LOGIKA MANAGE USER -->
+  <script type="module" src="manage_hd.js"></script>
 </body>
 </html>
