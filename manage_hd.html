@@ -29,7 +29,7 @@
     <!-- MAIN CONTENT GRID (SIDE BY SIDE) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       
-      <!-- KIRI: FORM INPUT USER (Mengambil 4 Kolom) -->
+      <!-- KIRI: FORM INPUT USER (4 Kolom) -->
       <div class="lg:col-span-4 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <h2 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
           <i class="fa-solid fa-user-plus text-indigo-600"></i> Form Tambah User HD
@@ -82,7 +82,7 @@
         </form>
       </div>
 
-      <!-- KANAN: TABEL DAFTAR USER (Mengambil 8 Kolom) -->
+      <!-- KANAN: TABEL DAFTAR USER (8 Kolom) -->
       <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
@@ -105,7 +105,7 @@
               </tr>
             </thead>
             <tbody id="user-table-body" class="divide-y divide-slate-100">
-              <!-- Data dirender otomatis via API -->
+              <tr><td colspan="7" class="p-6 text-center text-slate-400">Memuat data...</td></tr>
             </tbody>
           </table>
         </div>
@@ -115,13 +115,13 @@
 
   </div>
 
-  <!-- SCRIPT INTEGRASI KE API SERVERLESS -->
   <script>
     const userForm = document.getElementById('user-form');
     const tableBody = document.getElementById('user-table-body');
     const totalUsersBadge = document.getElementById('total-users');
     const btnSubmit = document.getElementById('btn-submit');
 
+    // 1. AMBIL DAFTAR USER DARI SERVER
     async function loadUsers() {
       try {
         const res = await fetch('/api/manage_hd');
@@ -170,6 +170,7 @@
       }
     }
 
+    // 2. SIMPAN USER BARU
     userForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -202,8 +203,6 @@
         alert('User HD Berhasil Ditambahkan!');
         userForm.reset();
         loadUsers();
-      } pembatalan => { // Catch block
-        // Error handler standard
       } catch (err) {
         console.error(err);
         alert('Gagal: ' + err.message);
@@ -213,6 +212,7 @@
       }
     });
 
+    // 3. HAPUS USER
     async function deleteUser(id) {
       if (!confirm('Apakah Anda yakin ingin menghapus user ini?')) return;
 
@@ -230,6 +230,7 @@
       }
     }
 
+    // Panggil saat halaman dibuka
     loadUsers();
   </script>
 </body>
