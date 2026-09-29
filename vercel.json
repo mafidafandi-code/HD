@@ -2,6 +2,10 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/send-reply/(.*)",
+      "destination": "/api/send-reply.js"
+    },
+    {
       "source": "/api/bot/(.*)",
       "destination": "/api/bot.js"
     },
@@ -19,7 +23,7 @@
     },
     {
       "source": "/",
-      "destination": "/manage_hd.html"
+      "destination": "/index.html"
     }
   ]
 }
