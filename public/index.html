@@ -232,16 +232,16 @@
       location.reload();
     }
 
-    function showDashboard() {
-      document.getElementById('login-section').classList.add('hidden');
-      document.getElementById('dashboard-section').classList.remove('hidden');
-      document.getElementById('user-display').innerText = `${currentUser.nama} (${currentUser.nik})`;
-      document.getElementById('badge-segmen').innerText = currentUser.segmen;
+   function showDashboard() {
+  document.getElementById('login-section').classList.add('hidden');
+  document.getElementById('dashboard-section').classList.remove('hidden');
+  document.getElementById('user-display').innerText = `${currentUser.nama} (${currentUser.nik})`;
+  document.getElementById('badge-segmen').innerText = currentUser.segmen;
 
-      setupPasteListener();
-      listenRealtimeTickets();
-      loadAnalytics();
-    }
+  setupPasteListener();
+  listenRealtimeTickets();
+  switchTab('open'); // Direct langsung ke Tab Open
+}
 
     function switchTab(tab) {
       activeTab = tab;
@@ -265,82 +265,100 @@
     let rawTicketsData = [];
 
     function listenRealtimeTickets() {
-      const { collection, query, where, onSnapshot } = window.firestoreTools;
-      
-      // Query filter berdasarkan Segmen HD
-      const q = query(
-        collection(window.db, 'permintaan'),
-        where('msg_type', '==', 'UTAMA'),
-        where('segmen', '==', currentUser.segmen)
-      );
+  const { collection, query, where, onSnapshot } = window.firestoreTools;
+  
+  // Ambil semua pesan UTAMA, filter segmen di Javascript untuk menghindari error Index / Case-Sensitive
+  const q = query(
+    collection(window.db, 'permintaan'),
+    where('msg_type', '==', 'UTAMA')
+  );
 
-      unsubscribeTickets = onSnapshot(q, (snapshot) => {
-        rawTicketsData = [];
-        let openCount = 0;
-        let progressCount = 0;
+  unsubscribeTickets = onSnapshot(q, (snapshot) => {
+    rawTicketsData = [];
+    let openCount = 0;
+    let progressCount = 0;
 
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          rawTicketsData.push(data);
-          if (data.status === 'OPEN') openCount++;
-          if (data.status === 'PROGRESS' || data.status === 'INPROGRESS') progressCount++;
-        });
+    const userSegmen = (currentUser.segmen || '').trim().toUpperCase();
 
-        document.getElementById('count-open').innerText = openCount;
-        document.getElementById('count-progress').innerText = progressCount;
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const ticketSegmen = (data.segmen || '').trim().toUpperCase();
 
-        if (activeTab !== 'analytics') {
-          renderTicketList();
-        }
-      });
+      // PASTIKAN SEGMEN SAMA (Semua HD di segmen yang sama BISA MELIHAT)
+      if (ticketSegmen === userSegmen) {
+        rawTicketsData.push(data);
+        
+        // Pengecekan status (Case-Insensitive)
+        const st = (data.status || '').toUpperCase();
+        if (st === 'OPEN') openCount++;
+        if (st === 'PROGRESS' || st === 'INPROGRESS') progressCount++;
+      }
+    });
+
+    // Update Badge Angka di Tab Menu
+    document.getElementById('count-open').innerText = openCount;
+    document.getElementById('count-progress').innerText = progressCount;
+
+    // Render ulang tampilan jika sedang tidak di tab Analytics
+    if (activeTab !== 'analytics') {
+      renderTicketList();
     }
+  }, (error) => {
+    console.error("Error Realtime Firestore:", error);
+    alert("Gagal mengambil data dari Firestore: " + error.message);
+  });
+}
 
     function renderTicketList() {
-      const container = document.getElementById('ticket-list');
-      container.innerHTML = '';
+  const container = document.getElementById('ticket-list');
+  container.innerHTML = '';
 
-      const filtered = rawTicketsData.filter(t => {
-        if (activeTab === 'open') return t.status === 'OPEN';
-        if (activeTab === 'progress') return t.status === 'PROGRESS' || t.status === 'INPROGRESS';
-        if (activeTab === 'closed') return t.status === 'CLOSED';
-        return false;
-      });
+  const filtered = rawTicketsData.filter(t => {
+    const st = (t.status || '').toUpperCase();
+    if (activeTab === 'open') return st === 'OPEN';
+    if (activeTab === 'progress') return st === 'PROGRESS' || st === 'INPROGRESS';
+    if (activeTab === 'closed') return st === 'CLOSED';
+    return false;
+  });
 
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="bg-white p-8 text-center text-gray-500 rounded-xl">Tidak ada tiket di kategori ini.</div>`;
-        return;
-      }
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="bg-white p-8 text-center text-gray-500 rounded-xl border border-dashed">
+        Tidak ada tiket di kategori ini untuk segmen <b>${currentUser.segmen}</b>.
+      </div>`;
+    return;
+  }
 
-      filtered.forEach(t => {
-        const div = document.createElement('div');
-        div.className = "bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4";
-        
-        const dateStr = t.timestamp_created?.toDate ? t.timestamp_created.toDate().toLocaleString('id-ID') : '-';
+  filtered.forEach(t => {
+    const div = document.createElement('div');
+    div.className = "bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4";
+    
+    const dateStr = t.timestamp_created?.toDate ? t.timestamp_created.toDate().toLocaleString('id-ID') : '-';
 
-        div.innerHTML = `
-          <div class="space-y-1">
-            <div class="flex items-center space-x-2">
-              <span class="font-bold text-blue-600">#${t.tiket_id}</span>
-              <span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-mono">${t.kategori_pekerjaan || ''}</span>
-              ${t.nama_hd ? `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">HD: ${t.nama_hd}</span>` : ''}
-            </div>
-            <p class="text-gray-800 font-medium">${escapeHtml(t.pesan)}</p>
-            <p class="text-xs text-gray-400">Teknisi: <span class="font-semibold text-gray-600">${t.nama_teknisi}</span> | Waktu: ${dateStr}</p>
-          </div>
-          <div class="flex items-center space-x-2">
-            <button onclick="openChatModal('${t.tiket_id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-1">
-              <span>💬 Balas</span>
-            </button>
-            ${activeTab === 'progress' ? `
-              <button onclick="markAsClosed('${t.tiket_id}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                ✅ Tandai Closed
-              </button>
-            ` : ''}
-          </div>
-        `;
-        container.appendChild(div);
-      });
-    }
+    div.innerHTML = `
+      <div class="space-y-1">
+        <div class="flex items-center space-x-2">
+          <span class="font-bold text-blue-600">#${t.tiket_id}</span>
+          <span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-mono">${t.kategori_pekerjaan || ''}</span>
+          ${t.nama_hd ? `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">HD: ${t.nama_hd}</span>` : ''}
+        </div>
+        <p class="text-gray-800 font-medium">${escapeHtml(t.pesan)}</p>
+        <p class="text-xs text-gray-400">Teknisi: <span class="font-semibold text-gray-600">${t.nama_teknisi}</span> | Waktu: ${dateStr}</p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button onclick="openChatModal('${t.tiket_id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-1">
+          <span>💬 Balas</span>
+        </button>
+        ${activeTab === 'progress' ? `
+          <button onclick="markAsClosed('${t.tiket_id}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+            ✅ Tandai Closed
+          </button>
+        ` : ''}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
 
     async function openChatModal(tiketId) {
       currentActiveTiket = rawTicketsData.find(t => t.tiket_id === tiketId);
