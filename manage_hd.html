@@ -11,7 +11,7 @@
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 p-4 md:p-8">
 
-  <div class="max-w-4xl mx-auto space-y-6">
+  <div class="max-w-5xl mx-auto space-y-6">
     
     <!-- HEADER -->
     <div class="flex items-center justify-between bg-slate-900 text-white p-5 rounded-2xl shadow-md">
@@ -34,34 +34,41 @@
 
       <form id="user-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">NIK HD</label>
-          <input type="text" id="nik-hd" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Contoh: HD001">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">NIK</label>
+          <input type="text" id="nik" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Contoh: 18980527">
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Petugas HD</label>
-          <input type="text" id="nama-hd" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Contoh: Ahmad Rizki">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama</label>
+          <input type="text" id="nama" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Contoh: Ahmad Rizki">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Username</label>
+          <input type="text" id="username" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Contoh: ahmad_hd">
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
-          <input type="password" id="password-hd" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="••••••••">
+          <input type="password" id="password" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="••••••••">
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Segmen / Unit</label>
-          <select id="segmen-hd" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs">
-            <option value="">-- Pilih Segmen --</option>
-            <option value="DPE">DPE</option>
-            <option value="DES">DES</option>
-            <option value="DGS">DGS</option>
-            <option value="DBS">DBS</option>
+          <input type="text" id="segmen" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Contoh: B2C">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Status</label>
+          <select id="status" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs">
+            <option value="aktif">aktif</option>
+            <option value="nonaktif">nonaktif</option>
           </select>
         </div>
 
         <div class="md:col-span-2">
-          <label class="block text-xs font-semibold text-slate-600 mb-1">ID Telegram (Opsional)</label>
-          <input type="text" id="telegram-hd" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Contoh: 123456789">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">ID Telegram</label>
+          <input type="text" id="id_telegram" class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none text-xs" placeholder="Contoh: kl">
         </div>
 
         <div class="md:col-span-2 pt-2">
@@ -87,7 +94,9 @@
             <tr>
               <th class="p-3">NIK</th>
               <th class="p-3">Nama</th>
+              <th class="p-3">Username</th>
               <th class="p-3">Segmen</th>
+              <th class="p-3">Status</th>
               <th class="p-3">ID Telegram</th>
               <th class="p-3 text-center">Aksi</th>
             </tr>
@@ -101,14 +110,14 @@
 
   </div>
 
-  <!-- SCRIPT UNTUK MEMANGGIL API SERVERLESS (VERCEL) -->
+  <!-- SCRIPT INTEGRASI KE API -->
   <script>
     const userForm = document.getElementById('user-form');
     const tableBody = document.getElementById('user-table-body');
     const totalUsersBadge = document.getElementById('total-users');
     const btnSubmit = document.getElementById('btn-submit');
 
-    // 1. GET ALL USERS DARI API /api/manage_hd
+    // 1. BACA USER DARI BACKEND
     async function loadUsers() {
       try {
         const res = await fetch('/api/manage_hd');
@@ -119,22 +128,30 @@
         totalUsersBadge.textContent = `Total: ${users.length}`;
 
         if (users.length === 0) {
-          tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada user terdaftar.</td></tr>`;
+          tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada user terdaftar.</td></tr>`;
           return;
         }
 
         users.forEach(user => {
           const row = document.createElement('tr');
           row.className = "hover:bg-slate-50 transition border-b border-slate-100";
+          
+          const isAktif = user.status === 'aktif';
+          const statusBadge = isAktif 
+            ? `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold rounded text-[10px]">aktif</span>`
+            : `<span class="px-2 py-0.5 bg-rose-100 text-rose-700 font-bold rounded text-[10px]">nonaktif</span>`;
+
           row.innerHTML = `
-            <td class="p-3 font-semibold text-slate-800">${user.nik_hd || '-'}</td>
-            <td class="p-3 font-medium text-slate-800">${user.nama_hd || '-'}</td>
+            <td class="p-3 font-semibold text-slate-800">${user.nik || '-'}</td>
+            <td class="p-3 font-medium text-slate-800">${user.nama || '-'}</td>
+            <td class="p-3 text-slate-600">${user.username || '-'}</td>
             <td class="p-3">
               <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 font-bold rounded text-[10px] uppercase border border-indigo-200">
                 ${user.segmen || '-'}
               </span>
             </td>
-            <td class="p-3 font-mono text-[11px] text-slate-500">${user.id_telegram_hd || '-'}</td>
+            <td class="p-3">${statusBadge}</td>
+            <td class="p-3 font-mono text-[11px] text-slate-500">${user.id_telegram || '-'}</td>
             <td class="p-3 text-center">
               <button onclick="deleteUser('${user.id}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md text-[11px] font-semibold transition border border-rose-200">
                 <i class="fa-solid fa-trash"></i> Hapus
@@ -145,20 +162,22 @@
         });
       } catch (err) {
         console.error(err);
-        tableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-500">Gagal memuat data user!</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-500">Gagal memuat data user!</td></tr>`;
       }
     }
 
-    // 2. TAMBAH USER BARU (POST)
+    // 2. SIMPAN USER BARU
     userForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const payload = {
-        nik_hd: document.getElementById('nik-hd').value.trim(),
-        nama_hd: document.getElementById('nama-hd').value.trim(),
-        password: document.getElementById('password-hd').value.trim(),
-        segmen: document.getElementById('segmen-hd').value,
-        id_telegram_hd: document.getElementById('telegram-hd').value.trim() || null
+        nik: document.getElementById('nik').value.trim(),
+        nama: document.getElementById('nama').value.trim(),
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value.trim(),
+        segmen: document.getElementById('segmen').value.trim(),
+        status: document.getElementById('status').value,
+        id_telegram: document.getElementById('id_telegram').value.trim() || ''
       };
 
       btnSubmit.disabled = true;
@@ -185,7 +204,7 @@
       }
     });
 
-    // 3. HAPUS USER (DELETE)
+    // 3. HAPUS USER
     async function deleteUser(id) {
       if (!confirm('Apakah Anda yakin ingin menghapus user ini?')) return;
 
@@ -201,7 +220,6 @@
       }
     }
 
-    // Jalankan saat pertama kali dibuka
     loadUsers();
   </script>
 </body>
