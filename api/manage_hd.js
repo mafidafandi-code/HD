@@ -1,13 +1,13 @@
 // api/manage_hd.js
-const admin = require('firebase-admin');
+import admin from 'firebase-admin';
 
-// Pembersih Private Key dari Vercel Environment Variable
+// Pembersih Private Key Vercel
 const parsePrivateKey = (key) => {
   if (!key) return undefined;
   return key.replace(/\\n/g, '\n').replace(/"/g, '');
 };
 
-// Inisialisasi Firebase
+// Inisialisasi Firebase Admin
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -24,8 +24,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-module.exports = async (req, res) => {
-  // Paksa response berupa JSON
+export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -36,14 +35,14 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // 1. GET ALL USERS (Tanpa orderBy agar tidak dipaksa buat Index Firestore)
+    // 1. READ ALL USERS (GET)
     if (req.method === 'GET') {
       const snapshot = await db.collection('users_hd').get();
       const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       return res.status(200).json(users);
     }
 
-    // 2. TAMBAH USER (POST)
+    // 2. SIMPAN USER BARU (POST)
     if (req.method === 'POST') {
       const body = req.body || {};
 
@@ -55,7 +54,7 @@ module.exports = async (req, res) => {
         segmen: String(body.segmen || ''),
         status: String(body.status || 'aktif'),
         id_telegram: String(body.id_telegram || ''),
-        created_at: new Date().toISOString() // Menggunakan ISO string standar
+        created_at: new Date().toISOString()
       };
 
       const docRef = await db.collection('users_hd').add(payload);
@@ -75,7 +74,6 @@ module.exports = async (req, res) => {
 
   } catch (err) {
     console.error('Server execution error:', err);
-    // Return JSON persis agar alert di browser menampilkan pesan error resminya
     return res.status(500).json({ error: err.message || 'Terjadi kesalahan pada Firebase Server' });
   }
-};
+}
