@@ -16,7 +16,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Deteksi segmen berdasarkan hashtag
+// Deteksi segmen hashtag
 function detectSegmen(text = '') {
   const lower = text.toLowerCase();
   if (lower.includes('#moban')) return { code: 'B2C', tag: '#moban' };
@@ -48,23 +48,24 @@ export default async function handler(req, res) {
         const text = message.text || message.caption || '';
         const segmenInfo = detectSegmen(text);
 
+        // Ekstraksi lampiran media jika ada
+        let attachments = [];
+        if (message.photo) {
+          attachments.push({ type: 'photo', file_id: message.photo[message.photo.length - 1].file_id });
+        }
+        if (message.video) {
+          attachments.push({ type: 'video', file_id: message.video.file_id });
+        }
+        if (message.document) {
+          attachments.push({ type: 'document', file_id: message.document.file_id });
+        }
+
         // ==========================================
-        // A. PEMBUATAN TIKET BARU (Mengandung Hashtag)
+        // A. BARIS DATA BARU: TIKET UTAMA (Memiliki Hashtag)
         // ==========================================
         if (segmenInfo) {
-          let attachments = [];
-          if (message.photo) {
-            const highestPhoto = message.photo[message.photo.length - 1];
-            attachments.push({ type: 'photo', file_id: highestPhoto.file_id });
-          }
-          if (message.video) {
-            attachments.push({ type: 'video', file_id: message.video.file_id });
-          }
-          if (message.document) {
-            attachments.push({ type: 'document', file_id: message.document.file_id });
-          }
-
-          const ticketData = {
+          const mainTicketData = {
+            type: 'TIKET_UTAMA',
             message_id: message.message_id,
             chat_id: message.chat.id,
             from_user: {
@@ -75,21 +76,16 @@ export default async function handler(req, res) {
             },
             segmen: segmenInfo.code,
             hashtag: segmenInfo.tag,
-            pesan_awal: text,
+            pesan: text,
             lampiran: attachments,
             status: 'OPEN',
-            created_at: admin.firestore.FieldValue.serverTimestamp(),
-            updated_at: admin.firestore.FieldValue.serverTimestamp(),
-            replies: []
+            created_at: admin.firestore.FieldValue.serverTimestamp()
           };
 
-          const docRef = await db.collection('permintaan').add(ticketData);
+          // Simpan sebagai baris dokumen baru di koleksi 'permintaan'
+          const docRef = await db.collection('permintaan').add(mainTicketData);
 
-          try {
-            await ctx.react('👍');
-          } catch (e) {
-            // Abaikan jika grup tidak mendukung emoji reaction
-          }
+          try { await ctx.react('👍'); } catch (e) {}
 
           await ctx.reply(`✅ Tiket Berhasil Dibuat!\n📌 ID Tiket: ${docRef.id}\n🏷️ Segmen: ${segmenInfo.code}`, {
             reply_to_message_id: message.message_id
@@ -98,52 +94,56 @@ export default async function handler(req, res) {
         }
 
         // ==========================================
-        // B. BALASAN TIKET (Reply Pesan Tanpa Hashtag)
+        // B. BARIS DATA BARU: BALASAN (Reply Message)
         // ==========================================
         if (message.reply_to_message) {
           const parentMessageId = message.reply_to_message.message_id;
 
+          // Cari tiket utama berdasarkan chat_id dan message_id yang di-reply
           const snapshot = await db.collection('permintaan')
             .where('chat_id', '==', message.chat.id)
             .where('message_id', '==', parentMessageId)
+            .where('type', '==', 'TIKET_UTAMA')
             .limit(1)
             .get();
 
           if (!snapshot.empty) {
-            const ticketDoc = snapshot.docs[0];
+            const mainDoc = snapshot.docs[0];
+            const mainTicketId = mainDoc.id; // Mengambil ID dari tiket utama
 
-            let replyAttachment = null;
-            if (message.photo) replyAttachment = { type: 'photo', file_id: message.photo[message.photo.length - 1].file_id };
-            if (message.video) replyAttachment = { type: 'video', file_id: message.video.file_id };
-            if (message.document) replyAttachment = { type: 'document', file_id: message.document.file_id };
-
-            const replyData = {
-              reply_message_id: message.message_id,
+            const replyTicketData = {
+              type: 'BALASAN',
+              permintaan_id: mainTicketId, // ID tiket utama tempat balasan ini merujuk
+              message_id: message.message_id,
+              chat_id: message.chat.id,
+              parent_message_id: parentMessageId,
               from_user: {
                 id: message.from.id,
                 username: message.from.username || '',
-                first_name: message.from.first_name || ''
+                first_name: message.from.first_name || '',
+                last_name: message.from.last_name || ''
               },
-              text: text,
-              attachment: replyAttachment,
-              timestamp: new Date().toISOString()
+              segmen: mainDoc.data().segmen, // Mengikuti segmen dari tiket utamanya
+              pesan: text,
+              lampiran: attachments,
+              created_at: admin.firestore.FieldValue.serverTimestamp()
             };
 
-            await db.collection('permintaan').doc(ticketDoc.id).update({
-              replies: admin.firestore.FieldValue.arrayUnion(replyData),
+            // Simpan BALASAN ini sebagai baris/dokumen BARU tersendiri
+            await db.collection('permintaan').add(replyTicketData);
+
+            // Opsional: Update timestamp updated_at pada dokumen tiket utama
+            await db.collection('permintaan').doc(mainTicketId).update({
               updated_at: admin.firestore.FieldValue.serverTimestamp()
             });
 
-            try {
-              await ctx.react('👀');
-            } catch (e) {}
-
+            try { await ctx.react('👀'); } catch (e) {}
             return;
           }
         }
 
         // ==========================================
-        // C. PESAN DITOLAK (Tanpa Hashtag & Bukan Reply)
+        // C. PESAN DITOLAK
         // ==========================================
         await ctx.reply('⚠️ Mohon sertakan hashtag segmen (#moban, #helprekan, #tolong) untuk membuat tiket baru, atau balas (reply) ke pesan tiket yang sudah ada.', {
           reply_to_message_id: message.message_id
