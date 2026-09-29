@@ -1,7 +1,7 @@
 import admin from 'firebase-admin';
 import { Telegraf } from 'telegraf';
 
-// 1. Inisialisasi Firebase Admin
+// Inisialisasi Firebase Admin
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -16,7 +16,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Fungsi Deteksi Segmen
+// Deteksi segmen hashtag
 function detectSegmen(text = '') {
   const lower = text.toLowerCase();
   if (lower.includes('#moban')) return { code: 'B2C', tag: '#moban' };
@@ -25,27 +25,24 @@ function detectSegmen(text = '') {
   return null;
 }
 
-// 2. Export Handler Vercel Serverless Function
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(200).send('Telegram Bot Webhook Endpoint Ready');
   }
 
-  // Ambil token langsung di dalam handler
-  const token = process.env.TELEGRAM_BOT_TOKEN;
+  // 1. Ambil token dari Environment Variable Vercel
+  // Jika variabel Vercel gagal terbaca, ganti string di bawah dengan Token Botfather Anda secara langsung (sebagai Fallback)
+  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8772387175:AAEB_JYpOSDWJTuIya3yLsSqohCL8i4mTOw';
 
-  if (!token) {
-    console.error('ERROR BUKAN DARI KODE: TELEGRAM_BOT_TOKEN tidak terbaca di Environment Vercel!');
-    return res.status(500).json({ 
-      error: 'TELEGRAM_BOT_TOKEN_MISSING',
-      message: 'Variabel TELEGRAM_BOT_TOKEN tidak ditemukan di Vercel process.env' 
-    });
+  if (!BOT_TOKEN || BOT_TOKEN.includes('8772387175:AAEB_JYpOSDWJTuIya3yLsSqohCL8i4mTOw')) {
+    console.error('CRITICAL ERROR: Token Telegram tidak ditemukan!');
+    return res.status(500).json({ error: 'Token Telegram belum diatur dengan benar.' });
   }
 
-  // Inisialisasi Telegraf
-  const bot = new Telegraf(token);
+  // 2. Inisialisasi Telegraf
+  const bot = new Telegraf(BOT_TOKEN);
 
-  // Setup Handler Pesan
+  // 3. Handler Logika Bot
   bot.on(['text', 'photo', 'video', 'document'], async (ctx) => {
     try {
       const message = ctx.message;
@@ -54,7 +51,7 @@ export default async function handler(req, res) {
       const text = message.text || message.caption || '';
       const segmenInfo = detectSegmen(text);
 
-      // A. PESAN BARU DENGAN HASHTAG
+      // A. TIKET BARU HASHTAG
       if (segmenInfo) {
         let attachments = [];
         if (message.photo) attachments.push({ type: 'photo', file_id: message.photo[message.photo.length - 1].file_id });
@@ -90,7 +87,7 @@ export default async function handler(req, res) {
         return;
       }
 
-      // B. PESAN BALASAN (REPLY)
+      // B. BALASAN TIKET (REPLY)
       if (message.reply_to_message) {
         const parentMessageId = message.reply_to_message.message_id;
 
@@ -145,7 +142,7 @@ export default async function handler(req, res) {
     await bot.handleUpdate(req.body);
     return res.status(200).json({ ok: true });
   } catch (err) {
-    console.error('Webhook Error:', err);
+    console.error('Webhook Handling Error:', err);
     return res.status(500).json({ error: err.message });
   }
 }
