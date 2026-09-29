@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Helpdesk Monitoring & Chat System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <style>
+    .chat-scroll::-webkit-scrollbar { width: 6px; }
+    .chat-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+    .chat-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body class="h-full font-sans text-slate-800 antialiased">
+
+  <!-- ================= 1. LOGIN SCREEN ================= -->
+  <div id="login-screen" class="min-h-screen flex items-center justify-center bg-slate-900 px-4">
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 border border-slate-100">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-4">
+          <i class="fa-solid fa-headset text-2xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900">Login Helpdesk (HD)</h2>
+        <p class="text-sm text-slate-500 mt-1">Monitoring & Respon Tiket Teknisi</p>
+      </div>
+
+      <form id="form-login" class="space-y-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">NIK</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+              <i class="fa-solid fa-id-card"></i>
+            </span>
+            <input type="text" id="login-nik" required placeholder="Masukkan NIK" 
+              class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input type="password" id="login-password" required placeholder="••••••••" 
+              class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
+          </div>
+        </div>
+
+        <div id="login-error" class="hidden text-xs text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+          NIK atau Password salah / akun tidak aktif.
+        </div>
+
+        <button type="submit" id="btn-login"
+          class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-lg shadow-blue-500/30 transition flex items-center justify-center">
+          <span>Masuk Dashboard</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= 2. MAIN DASHBOARD ================= -->
+  <div id="main-screen" class="hidden min-h-screen flex flex-col">
+    <!-- Navbar Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center space-x-3">
+            <i class="fa-solid fa-headset text-blue-400 text-2xl"></i>
+            <div>
+              <h1 class="font-bold text-lg leading-tight">HD Web Monitoring</h1>
+              <p class="text-xs text-slate-400">Segmen: <span id="user-segmen-badge" class="bg-blue-600 text-white px-2 py-0.5 rounded-full font-semibold">-</span></p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-4">
+            <div class="text-right hidden sm:block">
+              <p id="user-nama" class="text-sm font-semibold text-slate-200">-</p>
+              <p id="user-nik" class="text-xs text-slate-400">NIK: -</p>
+            </div>
+            <button id="btn-logout" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="Keluar">
+              <i class="fa-solid fa-right-from-bracket text-lg"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Sub Header Nav Tabs -->
+    <div class="bg-white border-b border-slate-200 shadow-sm sticky top-16 z-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav class="flex space-x-8 overflow-x-auto" id="main-tabs">
+          <button data-tab="analytics" class="tab-btn py-4 px-1 border-b-2 border-blue-600 text-blue-600 font-semibold text-sm whitespace-nowrap flex items-center space-x-2">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Analisa Keaktifan</span>
+          </button>
+          <button data-tab="open" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm whitespace-nowrap flex items-center space-x-2">
+            <i class="fa-solid fa-inbox"></i>
+            <span>Pesan Open</span>
+            <span id="badge-count-open" class="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+          </button>
+          <button data-tab="dikerjakan" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm whitespace-nowrap flex items-center space-x-2">
+            <i class="fa-solid fa-spinner"></i>
+            <span>Dikerjakan</span>
+            <span id="badge-count-progress" class="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+          </button>
+          <button data-tab="close" class="tab-btn py-4 px-1 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm whitespace-nowrap flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Tiket Close</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      
+      <!-- TAB 1: ANALISA KEAKTIFAN HD -->
+      <section id="tab-analytics" class="tab-content space-y-6">
+        <!-- Filter Tanggal -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center space-x-2 text-slate-700 font-semibold">
+            <i class="fa-solid fa-filter text-blue-600"></i>
+            <span>Filter Tanggal Analisa</span>
+          </div>
+          <div class="flex items-center space-x-3">
+            <input type="date" id="filter-start-date" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+            <span class="text-slate-400">s/d</span>
+            <input type="date" id="filter-end-date" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-blue-500" />
+            <button id="btn-apply-filter" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition">
+              Terapkan
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500 uppercase">Total Tiket Masuk</p>
+            <h3 id="stat-total-tiket" class="text-2xl font-bold text-slate-800 mt-2">0</h3>
+          </div>
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500 uppercase">Respon HD (Balasan)</p>
+            <h3 id="stat-total-respon" class="text-2xl font-bold text-blue-600 mt-2">0</h3>
+          </div>
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500 uppercase">Tiket Selesai (Closed)</p>
+            <h3 id="stat-total-closed" class="text-2xl font-bold text-emerald-600 mt-2">0</h3>
+          </div>
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-xs font-semibold text-slate-500 uppercase">Rata-Rata Respon Time</p>
+            <h3 id="stat-avg-response" class="text-2xl font-bold text-amber-600 mt-2">0 mnt</h3>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <h4 class="font-bold text-slate-800 mb-4 text-sm">Keaktifan Respon Agent HD</h4>
+            <div class="h-64"><canvas id="chart-hd-activity"></canvas></div>
+          </div>
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+            <h4 class="font-bold text-slate-800 mb-4 text-sm">Distribusi Status Tiket</h4>
+            <div class="h-64 flex justify-center"><canvas id="chart-status-distribution"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: PESAN OPEN -->
+      <section id="tab-open" class="tab-content hidden space-y-4">
+        <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <h3 class="font-bold text-slate-800">Tiket Masuk Baru (Status: OPEN)</h3>
+          <span class="text-xs text-slate-500">Pilih 'Balas & Ambil' untuk mulai menangani</span>
+        </div>
+        <div id="list-open" class="space-y-3"></div>
+      </section>
+
+      <!-- TAB 3: DIKERJAKAN -->
+      <section id="tab-dikerjakan" class="tab-content hidden space-y-4">
+        <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <h3 class="font-bold text-slate-800">Tiket Sedang Dalam Penanganan (Status: IN_PROGRESS)</h3>
+        </div>
+        <div id="list-dikerjakan" class="space-y-3"></div>
+      </section>
+
+      <!-- TAB 4: CLOSE -->
+      <section id="tab-close" class="tab-content hidden space-y-4">
+        <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <h3 class="font-bold text-slate-800">Riwayat Tiket Selesai (Status: CLOSE)</h3>
+        </div>
+        <div id="list-close" class="space-y-3"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= 3. MODAL LIVE CHAT ================= -->
+  <div id="modal-chat" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+      
+      <!-- Modal Header -->
+      <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span id="chat-tiket-id" class="text-xs font-bold bg-blue-600 px-2 py-0.5 rounded">#ID</span>
+            <h3 id="chat-teknisi-nama" class="font-bold text-sm">Nama Teknisi</h3>
+          </div>
+          <p id="chat-sub-info" class="text-xs text-slate-400 mt-0.5">Kategori: - | Username: @-</p>
+        </div>
+        <button id="btn-close-chat-modal" class="text-slate-400 hover:text-white p-1 text-xl">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Messages Stream -->
+      <div id="chat-box" class="flex-1 p-4 overflow-y-auto chat-scroll space-y-3 bg-slate-50"></div>
+
+      <!-- Preview Image Clipboard/Upload -->
+      <div id="image-preview-container" class="hidden p-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <img id="image-preview" class="w-16 h-16 object-cover rounded-lg border border-slate-300" src="" alt="Preview" />
+          <div>
+            <p class="text-xs font-semibold text-slate-700">Gambar Siap Dikirim</p>
+            <p class="text-[10px] text-slate-500">Klik hapus untuk membatalkan</p>
+          </div>
+        </div>
+        <button id="btn-cancel-image" class="text-red-500 hover:text-red-700 p-2">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+
+      <!-- Animated GIF Loading Indicator -->
+      <div id="chat-loading" class="hidden bg-blue-50 border-t border-blue-200 p-2.5 text-center text-blue-700 text-xs font-medium flex items-center justify-center space-x-2">
+        <img src="https://i.gifer.com/ZZ5H.gif" alt="Sending..." class="w-5 h-5" />
+        <span>Mengirim balasan ke Telegram Teknisi, mohon tunggu...</span>
+      </div>
+
+      <!-- Footer Form -->
+      <form id="form-send-chat" class="p-3 bg-white border-t border-slate-200 flex items-center space-x-2">
+        <label for="input-file" class="cursor-pointer p-2.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition" title="Lampirkan Gambar">
+          <i class="fa-solid fa-paperclip text-lg"></i>
+          <input type="file" id="input-file" accept="image/*" class="hidden" />
+        </label>
+        
+        <input type="text" id="input-message" placeholder="Ketik balasan (bisa langsung Paste / Ctrl+V gambar)..."
+          class="flex-1 py-2.5 px-4 bg-slate-100 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-blue-500" />
+
+        <button type="submit" id="btn-submit-chat" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm shadow transition flex items-center space-x-1">
+          <span>Kirim</span>
+          <i class="fa-solid fa-paper-plane text-xs"></i>
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= 4. FIREBASE SDK & APPLICATION CODE ================= -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { 
+      getFirestore, collection, query, where, onSnapshot, updateDoc, doc, getDocs, serverTimestamp 
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    // Salin Firebase Config Web App Anda di sini
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Global App States
+    let currentUser = null;
+    let activeTicketId = null;
+    let activeTicketData = null;
+    let selectedImageBase64 = null;
+    let unsubscribeChatListener = null;
+
+    let chartHDActivity = null;
+    let chartStatusDist = null;
+    let rawAllTickets = [];
+
+    // DOM Elements
+    const loginScreen = document.getElementById('login-screen');
+    const mainScreen = document.getElementById('main-screen');
+    const formLogin = document.getElementById('form-login');
+    const loginError = document.getElementById('login-error');
+
+    const modalChat = document.getElementById('modal-chat');
+    const btnCloseChatModal = document.getElementById('btn-close-chat-modal');
+    const chatBox = document.getElementById('chat-box');
+    const formSendChat = document.getElementById('form-send-chat');
+    const inputMessage = document.getElementById('input-message');
+    const inputFile = document.getElementById('input-file');
+    const imagePreviewContainer = document.getElementById('image-preview-container');
+    const imagePreview = document.getElementById('image-preview');
+    const btnCancelImage = document.getElementById('btn-cancel-image');
+    const chatLoading = document.getElementById('chat-loading');
+
+    // 1. Session Check
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedUser = sessionStorage.getItem('hd_user');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        showDashboard();
+      }
+    });
+
+    // 2. Login Event
+    formLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginError.classList.add('hidden');
+      const nik = document.getElementById('login-nik').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+
+      try {
+        const q = query(
+          collection(db, 'users_hd'), 
+          where('nik', '==', nik),
+          where('password', '==', password)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const docData = querySnapshot.docs[0].data();
+          currentUser = { id: querySnapshot.docs[0].id, ...docData };
+          sessionStorage.setItem('hd_user', JSON.stringify(currentUser));
+          showDashboard();
+        } else {
+          loginError.classList.remove('hidden');
+        }
+      } catch (err) {
+        console.error("Login Error:", err);
+        loginError.innerText = "Terjadi kesalahan koneksi ke Firebase.";
+        loginError.classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      sessionStorage.removeItem('hd_user');
+      location.reload();
+    });
+
+    function showDashboard() {
+      loginScreen.classList.add('hidden');
+      mainScreen.classList.remove('hidden');
+      document.getElementById('user-nama').innerText = currentUser.nama;
+      document.getElementById('user-nik').innerText = `NIK: ${currentUser.nik}`;
+      document.getElementById('user-segmen-badge').innerText = currentUser.segmen;
+
+      initRealtimeListeners();
+      initAnalyticsChart();
+    }
+
+    // 3. Navigation Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-tab');
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('border-blue-600', 'text-blue-600');
+          b.classList.add('border-transparent', 'text-slate-500');
+        });
+        btn.classList.remove('border-transparent', 'text-slate-500');
+        btn.classList.add('border-blue-600', 'text-blue-600');
+
+        document.querySelectorAll('.tab-content').forEach(c => {
+          c.id === `tab-${target}` ? c.classList.remove('hidden') : c.classList.add('hidden');
+        });
+      });
+    });
+
+    // 4. Realtime Firestore Listener
+    function initRealtimeListeners() {
+      const q = query(
+        collection(db, 'permintaan'),
+        where('segmen', '==', currentUser.segmen)
+      );
+
+      onSnapshot(q, (snapshot) => {
+        rawAllTickets = [];
+        snapshot.forEach(docSnap => {
+          rawAllTickets.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        renderInboxLists();
+        updateDashboardMetrics();
+      });
+    }
+
+    function renderInboxLists() {
+      // Ambil hanya Tiket UTAMA untuk membedakan item per tiket
+      const mainTickets = rawAllTickets.filter(t => t.msg_type === 'UTAMA');
+
+      const openTickets = mainTickets.filter(t => t.status === 'OPEN');
+      const inProgressTickets = mainTickets.filter(t => t.status === 'IN_PROGRESS' || t.status === 'in_progress');
+      const closedTickets = mainTickets.filter(t => t.status === 'CLOSE' || t.status === 'close');
+
+      document.getElementById('badge-count-open').innerText = openTickets.length;
+      document.getElementById('badge-count-progress').innerText = inProgressTickets.length;
+
+      document.getElementById('list-open').innerHTML = openTickets.length === 0
+        ? `<div class="p-8 text-center text-slate-400 bg-white rounded-xl">Tidak ada tiket OPEN.</div>`
+        : openTickets.map(t => createTicketCard(t, 'open')).join('');
+
+      document.getElementById('list-dikerjakan').innerHTML = inProgressTickets.length === 0
+        ? `<div class="p-8 text-center text-slate-400 bg-white rounded-xl">Tidak ada tiket sedang dikerjakan.</div>`
+        : inProgressTickets.map(t => createTicketCard(t, 'dikerjakan')).join('');
+
+      document.getElementById('list-close').innerHTML = closedTickets.length === 0
+        ? `<div class="p-8 text-center text-slate-400 bg-white rounded-xl">Belum ada riwayat tiket selesai.</div>`
+        : closedTickets.map(t => createTicketCard(t, 'close')).join('');
+    }
+
+    function createTicketCard(t, tabType) {
+      const dateStr = t.timestamp_created?.seconds 
+        ? new Date(t.timestamp_created.seconds * 1000).toLocaleString('id-ID')
+        : 'Baru saja';
+
+      let actions = '';
+      if (tabType === 'open') {
+        actions = `
+          <button onclick="handleTakeAndReply('${t.tiket_id}')" 
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1">
+            <i class="fa-solid fa-reply"></i>
+            <span>Balas & Ambil</span>
+          </button>
+        `;
+      } else if (tabType === 'dikerjakan') {
+        actions = `
+          <button onclick="openChatModal('${t.tiket_id}')" 
+            class="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition flex items-center space-x-1">
+            <i class="fa-solid fa-comments"></i>
+            <span>Balas</span>
+          </button>
+          <button onclick="handleMarkClose('${t.tiket_id}')" 
+            class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1">
+            <i class="fa-solid fa-check"></i>
+            <span>Selesai (Close)</span>
+          </button>
+        `;
+      } else {
+        actions = `<span class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold">Closed</span>`;
+      }
+
+      return `
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">#${t.tiket_id}</span>
+              <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">${t.kategori_pekerjaan || 'Umum'}</span>
+              <span class="text-xs text-slate-400">${dateStr}</span>
+            </div>
+            <p class="text-sm font-semibold text-slate-800">${t.nama_teknisi || 'Teknisi'} <span class="text-slate-400 font-normal">(@${t.username_teknisi || '-'})</span></p>
+            <p class="text-xs text-slate-600 line-clamp-1">${t.pesan || '(Gambar/Lampiran)'}</p>
+          </div>
+          <div class="flex items-center space-x-2 self-end sm:self-center">
+            ${actions}
+          </div>
+        </div>
+      `;
+    }
+
+    // 5. Handle Take Tiket
+    window.handleTakeAndReply = async (tiketId) => {
+      try {
+        const q = query(collection(db, 'permintaan'), where('tiket_id', '==', tiketId), where('msg_type', '==', 'UTAMA'));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          const docId = snapshot.docs[0].id;
+          await updateDoc(doc(db, 'permintaan', docId), {
+            status: 'IN_PROGRESS',
+            timestamp_taken: serverTimestamp(),
+            id_telegram_hd: currentUser.id_telegram || currentUser.nik,
+            nama_hd: currentUser.nama
+          });
+        }
+        openChatModal(tiketId);
+      } catch (err) {
+        alert('Gagal mengambil tiket: ' + err.message);
+      }
+    };
+
+    window.handleMarkClose = async (tiketId) => {
+      if (!confirm('Apakah Anda yakin ingin mengupdate status tiket ini menjadi CLOSE?')) return;
+      try {
+        const q = query(collection(db, 'permintaan'), where('tiket_id', '==', tiketId), where('msg_type', '==', 'UTAMA'));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          const docId = snapshot.docs[0].id;
+          await updateDoc(doc(db, 'permintaan', docId), {
+            status: 'CLOSE',
+            timestamp_close: serverTimestamp()
+          });
+        }
+      } catch (err) {
+        alert('Gagal menutup tiket: ' + err.message);
+      }
+    };
+
+    // 6. Modal Live Chat Logic
+    window.openChatModal = (tiketId) => {
+      activeTicketId = tiketId;
+      modalChat.classList.remove('hidden');
+      document.getElementById('chat-tiket-id').innerText = `#${tiketId}`;
+
+      if (unsubscribeChatListener) unsubscribeChatListener();
+
+      const q = query(collection(db, 'permintaan'), where('tiket_id', '==', tiketId));
+
+      unsubscribeChatListener = onSnapshot(q, (snapshot) => {
+        const messages = [];
+        snapshot.forEach(docSnap => {
+          messages.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // Urutkan berdasarkan waktu
+        messages.sort((a,b) => (a.timestamp_created?.seconds || 0) - (b.timestamp_created?.seconds || 0));
+
+        const mainTicket = messages.find(m => m.msg_type === 'UTAMA');
+        if (mainTicket) {
+          activeTicketData = mainTicket;
+          document.getElementById('chat-teknisi-nama').innerText = mainTicket.nama_teknisi || 'Teknisi';
+          document.getElementById('chat-sub-info').innerText = `Kategori: ${mainTicket.kategori_pekerjaan || '-'} | Username: @${mainTicket.username_teknisi || '-'}`;
+        }
+
+        renderChatBubbles(messages);
+      });
+    };
+
+    btnCloseChatModal.addEventListener('click', () => {
+      modalChat.classList.add('hidden');
+      activeTicketId = null;
+      if (unsubscribeChatListener) unsubscribeChatListener();
+    });
+
+    function renderChatBubbles(messages) {
+      chatBox.innerHTML = messages.map(msg => {
+        const isHD = msg.sender_type === 'HD';
+        const date = msg.timestamp_created?.seconds 
+          ? new Date(msg.timestamp_created.seconds * 1000).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) 
+          : '';
+
+        return `
+          <div class="flex flex-col ${isHD ? 'items-end' : 'items-start'}">
+            <span class="text-[10px] text-slate-400 mb-0.5 px-1">
+              ${isHD ? `By HD: ${msg.nama_hd || currentUser.nama}` : (msg.nama_teknisi || 'Teknisi')}
+            </span>
+            <div class="max-w-[80%] rounded-2xl p-3 text-sm ${
+              isHD 
+                ? 'bg-blue-600 text-white rounded-tr-none' 
+                : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none shadow-sm'
+            }">
+              ${msg.pesan ? `<p class="whitespace-pre-wrap">${msg.pesan}</p>` : ''}
+              <span class="block text-[9px] ${isHD ? 'text-blue-200' : 'text-slate-400'} text-right mt-1">${date}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    // --- Clipboard Paste Gambar ---
+    inputMessage.addEventListener('paste', (e) => {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let item of items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          convertAndPreviewImage(file);
+        }
+      }
+    });
+
+    inputFile.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        convertAndPreviewImage(e.target.files[0]);
+      }
+    });
+
+    function convertAndPreviewImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        selectedImageBase64 = e.target.result;
+        imagePreview.src = selectedImageBase64;
+        imagePreviewContainer.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    btnCancelImage.addEventListener('click', () => {
+      selectedImageBase64 = null;
+      inputFile.value = '';
+      imagePreviewContainer.classList.add('hidden');
+    });
+
+    // --- Kirim Pesan via API Route Vercel ---
+    formSendChat.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = inputMessage.value.trim();
+
+      if (!text && !selectedImageBase64) return;
+      if (!activeTicketData) {
+        alert('Data Tiket Utama tidak ditemukan.');
+        return;
+      }
+
+      chatLoading.classList.remove('hidden');
+      document.getElementById('btn-submit-chat').disabled = true;
+
+      try {
+        const payload = {
+          tiket_id: activeTicketId,
+          pesan: text,
+          image_base64: selectedImageBase64,
+          nama_hd: currentUser.nama,
+          nik_hd: currentUser.nik,
+          id_telegram_hd: currentUser.id_telegram || currentUser.nik,
+          chat_id: activeTicketData.chat_id,
+          message_id_utama: activeTicketData.message_id,
+          segmen: currentUser.segmen,
+          kategori_pekerjaan: activeTicketData.kategori_pekerjaan
+        };
+
+        const response = await fetch('/api/send-reply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const resData = await response.json();
+        if (!response.ok) throw new Error(resData.error || 'Gagal mengirim pesan');
+
+        // Reset Input
+        inputMessage.value = '';
+        selectedImageBase64 = null;
+        inputFile.value = '';
+        imagePreviewContainer.classList.add('hidden');
+      } catch (err) {
+        alert('Gagal mengirim balasan: ' + err.message);
+      } finally {
+        chatLoading.classList.add('hidden');
+        document.getElementById('btn-submit-chat').disabled = false;
+      }
+    });
+
+    // 7. Analytics Charts
+    function initAnalyticsChart() {
+      const ctx1 = document.getElementById('chart-hd-activity').getContext('2d');
+      const ctx2 = document.getElementById('chart-status-distribution').getContext('2d');
+
+      chartHDActivity = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Jumlah Balasan HD',
+            data: [],
+            backgroundColor: '#2563eb',
+            borderRadius: 6
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      chartStatusDist = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['OPEN', 'IN PROGRESS', 'CLOSE'],
+          datasets: [{
+            data: [0, 0, 0],
+            backgroundColor: ['#ef4444', '#f59e0b', '#10b981']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function updateDashboardMetrics() {
+      const startDateVal = document.getElementById('filter-start-date').value;
+      const endDateVal = document.getElementById('filter-end-date').value;
+
+      let filtered = rawAllTickets;
+
+      if (startDateVal) {
+        const start = new Date(startDateVal).getTime();
+        filtered = filtered.filter(t => (t.timestamp_created?.seconds * 1000) >= start);
+      }
+      if (endDateVal) {
+        const end = new Date(endDateVal).getTime() + (24 * 60 * 60 * 1000);
+        filtered = filtered.filter(t => (t.timestamp_created?.seconds * 1000) <= end);
+      }
+
+      const mainTickets = filtered.filter(t => t.msg_type === 'UTAMA');
+      const hdReplies = filtered.filter(t => t.sender_type === 'HD');
+
+      const totalTiket = mainTickets.length;
+      const totalRespon = hdReplies.length;
+      const totalClosed = mainTickets.filter(t => t.status === 'CLOSE' || t.status === 'close').length;
+
+      document.getElementById('stat-total-tiket').innerText = totalTiket;
+      document.getElementById('stat-total-respon').innerText = totalRespon;
+      document.getElementById('stat-total-closed').innerText = totalClosed;
+      document.getElementById('stat-avg-response').innerText = `~${Math.round(totalRespon > 0 ? (totalTiket / totalRespon) * 4 : 0)} mnt`;
+
+      // Chart: Keaktifan HD
+      const hdCounts = {};
+      hdReplies.forEach(r => {
+        const name = r.nama_hd || 'HD';
+        hdCounts[name] = (hdCounts[name] || 0) + 1;
+      });
+
+      chartHDActivity.data.labels = Object.keys(hdCounts);
+      chartHDActivity.data.datasets[0].data = Object.values(hdCounts);
+      chartHDActivity.update();
+
+      // Chart: Status Tiket
+      const countOpen = mainTickets.filter(t => t.status === 'OPEN').length;
+      const countInProgress = mainTickets.filter(t => t.status === 'IN_PROGRESS' || t.status === 'in_progress').length;
+
+      chartStatusDist.data.datasets[0].data = [countOpen, countInProgress, totalClosed];
+      chartStatusDist.update();
+    }
+
+    document.getElementById('btn-apply-filter').addEventListener('click', updateDashboardMetrics);
+  </script>
+</body>
+</html>
