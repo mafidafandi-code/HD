@@ -1,12 +1,12 @@
-// api/manage_hd.js
 const admin = require('firebase-admin');
 
-// Format private key Vercel agar aman dari penulisan \n
+// Fungsi pembersih format Private Key dari Vercel
 const parsePrivateKey = (key) => {
   if (!key) return undefined;
   return key.replace(/\\n/g, '\n').replace(/"/g, '');
 };
 
+// Inisialisasi Firebase Admin
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -36,17 +36,18 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // A. BACA ALL USERS (GET)
+    // A. READ / BACA DATA (GET)
     if (method === 'GET') {
       const snapshot = await db.collection('users_hd').orderBy('timestamp_created', 'desc').get();
       const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       return res.status(200).json(users);
     }
 
-    // B. TAMBAH USER BARU (POST)
+    // B. CREATE / TAMBAH USER (POST)
     if (method === 'POST') {
       const body = req.body || {};
 
+      // Pastikan string aman (mencegah undefined error di Firestore)
       const payload = {
         nik: String(body.nik || ''),
         nama: String(body.nama || ''),
@@ -62,7 +63,7 @@ module.exports = async (req, res) => {
       return res.status(200).json({ id: docRef.id, message: 'User HD berhasil ditambahkan' });
     }
 
-    // C. HAPUS USER (DELETE)
+    // C. DELETE / HAPUS USER (DELETE)
     if (method === 'DELETE') {
       const { id } = req.query;
       if (!id) return res.status(400).json({ error: 'ID User diperlukan' });
@@ -72,9 +73,10 @@ module.exports = async (req, res) => {
 
     res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
     return res.status(405).json({ error: `Method ${method} Not Allowed` });
+
   } catch (err) {
-    console.error('Error Server API:', err);
-    // Kembalikan JSON walau server crash agar frontend tidak error "Unexpected token"
+    console.error('Error di Serverless API:', err);
+    // Return JSON error agar tidak keluar teks 'Unexpected token' di frontend
     return res.status(500).json({ error: err.message || 'Terjadi kesalahan pada server Firebase' });
   }
 };
