@@ -1,5 +1,5 @@
 // api/manage_hd.js
-import admin from 'firebase-admin';
+const admin = require('firebase-admin');
 
 // Pembersih Private Key dari Vercel Environment Variable
 const parsePrivateKey = (key) => {
@@ -7,7 +7,7 @@ const parsePrivateKey = (key) => {
   return key.replace(/\\n/g, '\n').replace(/"/g, '');
 };
 
-// Inisialisasi Firebase Admin
+// Inisialisasi Firebase
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -24,7 +24,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   // Paksa response berupa JSON
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. BACA ALL USERS (GET)
+    // 1. GET ALL USERS (Tanpa orderBy agar tidak dipaksa buat Index Firestore)
     if (req.method === 'GET') {
       const snapshot = await db.collection('users_hd').get();
       const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
         segmen: String(body.segmen || ''),
         status: String(body.status || 'aktif'),
         id_telegram: String(body.id_telegram || ''),
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString() // Menggunakan ISO string standar
       };
 
       const docRef = await db.collection('users_hd').add(payload);
@@ -75,6 +75,7 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('Server execution error:', err);
+    // Return JSON persis agar alert di browser menampilkan pesan error resminya
     return res.status(500).json({ error: err.message || 'Terjadi kesalahan pada Firebase Server' });
   }
-}
+};
