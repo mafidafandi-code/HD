@@ -1,6 +1,7 @@
 {
   "name": "monitoring-hd",
   "version": "1.0.0",
+  "type": "module",
   "main": "api/bot.js",
   "dependencies": {
     "firebase-admin": "^12.0.0",
