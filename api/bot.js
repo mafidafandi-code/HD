@@ -16,7 +16,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Deteksi segmen hashtag
+// Helper untuk mendeteksi segmen dan hashtag
 function detectSegmen(text = '') {
   const lower = text.toLowerCase();
   if (lower.includes('#moban')) return { code: 'B2C', tag: '#moban' };
@@ -25,15 +25,29 @@ function detectSegmen(text = '') {
   return null;
 }
 
+// Helper untuk mengekstrak file_id dan menggabungkannya dengan koma
+function extractFileIds(message) {
+  const fileIds = [];
+  if (message.photo && message.photo.length > 0) {
+    fileIds.push(message.photo[message.photo.length - 1].file_id);
+  }
+  if (message.video) {
+    fileIds.push(message.video.file_id);
+  }
+  if (message.document) {
+    fileIds.push(message.document.file_id);
+  }
+  return fileIds.length > 0 ? fileIds.join(',') : null;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(200).send('Telegram Bot Webhook Endpoint Active');
+    return res.status(200).send('Telegram Bot Webhook Active');
   }
 
   const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-
   if (!BOT_TOKEN) {
-    console.error('ERROR: TELEGRAM_BOT_TOKEN belum terpasang di Vercel.');
+    console.error('ERROR: TELEGRAM_BOT_TOKEN belum dikonfigurasi.');
     return res.status(500).json({ error: 'TELEGRAM_BOT_TOKEN missing' });
   }
 
@@ -47,47 +61,45 @@ export default async function handler(req, res) {
 
         const text = message.text || message.caption || '';
         const segmenInfo = detectSegmen(text);
-
-        // Ekstraksi lampiran media jika ada
-        let attachments = [];
-        if (message.photo) {
-          attachments.push({ type: 'photo', file_id: message.photo[message.photo.length - 1].file_id });
-        }
-        if (message.video) {
-          attachments.push({ type: 'video', file_id: message.video.file_id });
-        }
-        if (message.document) {
-          attachments.push({ type: 'document', file_id: message.document.file_id });
-        }
+        const fileIdString = extractFileIds(message);
 
         // ==========================================
-        // A. BARIS DATA BARU: TIKET UTAMA (Memiliki Hashtag)
+        // A. BARIS DATA BARU: TIKET UTAMA (Pesan ber-Hashtag)
         // ==========================================
         if (segmenInfo) {
+          // Buat docRef dulu untuk mendapatkan ID Unik (id_permintaan)
+          const newDocRef = db.collection('permintaan').doc();
+          const generatedId = newDocRef.id;
+
           const mainTicketData = {
-            type: 'TIKET_UTAMA',
-            message_id: message.message_id,
+            id_permintaan: generatedId,
+            tiket_id: generatedId, // Untuk Tiket Utama, tiket_id diisi ID ini sendiri
+            msg_type: 'UTAMA',
+            sender_type: 'TELEGRAM',
             chat_id: message.chat.id,
-            from_user: {
-              id: message.from.id,
-              username: message.from.username || '',
-              first_name: message.from.first_name || '',
-              last_name: message.from.last_name || ''
-            },
+            thread_id: message.message_thread_id || null,
+            message_id: message.message_id,
+            reply_to_message_id: null,
             segmen: segmenInfo.code,
-            hashtag: segmenInfo.tag,
+            kategori_pekerjaan: segmenInfo.tag,
             pesan: text,
-            lampiran: attachments,
+            file_id: fileIdString,
+            id_telegram_teknisi: message.from.id,
+            nama_teknisi: [message.from.first_name, message.from.last_name].filter(Boolean).join(' '),
+            username_teknisi: message.from.username || null,
+            id_telegram_hd: null,
             status: 'OPEN',
-            created_at: admin.firestore.FieldValue.serverTimestamp()
+            keterangan: null,
+            timestamp_created: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp_taken: null,
+            timestamp_close: null
           };
 
-          // Simpan sebagai baris dokumen baru di koleksi 'permintaan'
-          const docRef = await db.collection('permintaan').add(mainTicketData);
+          await newDocRef.set(mainTicketData);
 
           try { await ctx.react('👍'); } catch (e) {}
 
-          await ctx.reply(`✅ Tiket Berhasil Dibuat!\n📌 ID Tiket: ${docRef.id}\n🏷️ Segmen: ${segmenInfo.code}`, {
+          await ctx.reply(`✅ Tiket Berhasil Dibuat!\n📌 ID Tiket: ${generatedId}\n🏷️ Segmen: ${segmenInfo.code}`, {
             reply_to_message_id: message.message_id
           });
           return;
@@ -99,42 +111,53 @@ export default async function handler(req, res) {
         if (message.reply_to_message) {
           const parentMessageId = message.reply_to_message.message_id;
 
-          // Cari tiket utama berdasarkan chat_id dan message_id yang di-reply
+          // 1. Cari Tiket Utama di mana chat_id dan message_id cocok dengan pesan yang di-reply
           const snapshot = await db.collection('permintaan')
             .where('chat_id', '==', message.chat.id)
             .where('message_id', '==', parentMessageId)
-            .where('type', '==', 'TIKET_UTAMA')
+            .where('msg_type', '==', 'UTAMA')
             .limit(1)
             .get();
 
           if (!snapshot.empty) {
             const mainDoc = snapshot.docs[0];
-            const mainTicketId = mainDoc.id; // Mengambil ID dari tiket utama
+            const mainData = mainDoc.data();
+            const parentTiketId = mainData.tiket_id;
+
+            const newReplyRef = db.collection('permintaan').doc();
+            const replyGeneratedId = newReplyRef.id;
 
             const replyTicketData = {
-              type: 'BALASAN',
-              permintaan_id: mainTicketId, // ID tiket utama tempat balasan ini merujuk
-              message_id: message.message_id,
+              id_permintaan: replyGeneratedId,
+              tiket_id: parentTiketId, // Merujuk ke tiket_id Tiket Utama
+              msg_type: 'BALASAN',
+              sender_type: 'TELEGRAM',
               chat_id: message.chat.id,
-              parent_message_id: parentMessageId,
-              from_user: {
-                id: message.from.id,
-                username: message.from.username || '',
-                first_name: message.from.first_name || '',
-                last_name: message.from.last_name || ''
-              },
-              segmen: mainDoc.data().segmen, // Mengikuti segmen dari tiket utamanya
+              thread_id: message.message_thread_id || null,
+              message_id: message.message_id,
+              reply_to_message_id: parentMessageId,
+              segmen: mainData.segmen,
+              kategori_pekerjaan: mainData.kategori_pekerjaan,
               pesan: text,
-              lampiran: attachments,
-              created_at: admin.firestore.FieldValue.serverTimestamp()
+              file_id: fileIdString,
+              id_telegram_teknisi: message.from.id,
+              nama_teknisi: [message.from.first_name, message.from.last_name].filter(Boolean).join(' '),
+              username_teknisi: message.from.username || null,
+              id_telegram_hd: null,
+              status: null, // Pesan balasan tidak perlu status
+              keterangan: null,
+              timestamp_created: admin.firestore.FieldValue.serverTimestamp(),
+              timestamp_taken: null,
+              timestamp_close: null
             };
 
-            // Simpan BALASAN ini sebagai baris/dokumen BARU tersendiri
-            await db.collection('permintaan').add(replyTicketData);
+            // Simpan baris balasan baru
+            await newReplyRef.set(replyTicketData);
 
-            // Opsional: Update timestamp updated_at pada dokumen tiket utama
-            await db.collection('permintaan').doc(mainTicketId).update({
-              updated_at: admin.firestore.FieldValue.serverTimestamp()
+            // 2. RE-OPEN TIKET UTAMA: Kembalikan status Tiket Utama ke 'OPEN' & reset timestamp_close
+            await db.collection('permintaan').doc(mainDoc.id).update({
+              status: 'OPEN',
+              timestamp_close: null
             });
 
             try { await ctx.react('👀'); } catch (e) {}
@@ -143,14 +166,14 @@ export default async function handler(req, res) {
         }
 
         // ==========================================
-        // C. PESAN DITOLAK
+        // C. PESAN DITOLAK (Tanpa Hashtag & Bukan Reply Tiket Valid)
         // ==========================================
         await ctx.reply('⚠️ Mohon sertakan hashtag segmen (#moban, #helprekan, #tolong) untuk membuat tiket baru, atau balas (reply) ke pesan tiket yang sudah ada.', {
           reply_to_message_id: message.message_id
         });
 
       } catch (err) {
-        console.error('Error handling message:', err);
+        console.error('Error Processing Message:', err);
       }
     });
 
@@ -160,7 +183,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
   } catch (error) {
-    console.error('Webhook Handling Error:', error);
+    console.error('Webhook Error:', error);
     if (!res.headersSent) {
       return res.status(500).json({ error: error.message });
     }
