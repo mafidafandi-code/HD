@@ -1,6 +1,6 @@
+// api/manage_hd.js
 const admin = require('firebase-admin');
 
-// Inisialisasi Firebase Admin dengan Config Vercel Environment
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // A. BACA DATA USERS (GET)
+    // A. BACA ALL USERS (GET)
     if (method === 'GET') {
       const snapshot = await db.collection('users_hd').orderBy('timestamp_created', 'desc').get();
       const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -37,9 +37,21 @@ module.exports = async (req, res) => {
 
     // B. TAMBAH USER BARU (POST)
     if (method === 'POST') {
-      const data = req.body;
-      data.timestamp_created = admin.firestore.FieldValue.serverTimestamp();
-      const docRef = await db.collection('users_hd').add(data);
+      const body = req.body || {};
+
+      // Pastikan semua field tidak undefined agar Firebase tidak menolak
+      const payload = {
+        nik: String(body.nik || ''),
+        nama: String(body.nama || ''),
+        username: String(body.username || ''),
+        password: String(body.password || ''),
+        segmen: String(body.segmen || ''),
+        status: String(body.status || 'aktif'),
+        id_telegram: String(body.id_telegram || ''),
+        timestamp_created: admin.firestore.FieldValue.serverTimestamp()
+      };
+
+      const docRef = await db.collection('users_hd').add(payload);
       return res.status(200).json({ id: docRef.id, message: 'User HD berhasil ditambahkan' });
     }
 
@@ -55,6 +67,6 @@ module.exports = async (req, res) => {
     return res.status(405).end(`Method ${method} Not Allowed`);
   } catch (err) {
     console.error('Error di API Manage HD:', err);
-    return res.status(500).json({ error: 'Terjadi kesalahan pada server Firebase' });
+    return res.status(500).json({ error: err.message || 'Terjadi kesalahan pada server Firebase' });
   }
 };
