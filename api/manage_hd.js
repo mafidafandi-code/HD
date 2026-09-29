@@ -1,16 +1,24 @@
 // api/manage_hd.js
 const admin = require('firebase-admin');
 
+// Format private key Vercel agar aman dari penulisan \n
+const parsePrivateKey = (key) => {
+  if (!key) return undefined;
+  return key.replace(/\\n/g, '\n').replace(/"/g, '');
+};
+
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY
-        ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-        : undefined,
-    }),
-  });
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: parsePrivateKey(process.env.FIREBASE_PRIVATE_KEY),
+      }),
+    });
+  } catch (initErr) {
+    console.error('Firebase Initialization Error:', initErr);
+  }
 }
 
 const db = admin.firestore();
@@ -39,7 +47,6 @@ module.exports = async (req, res) => {
     if (method === 'POST') {
       const body = req.body || {};
 
-      // Pastikan semua field tidak undefined agar Firebase tidak menolak
       const payload = {
         nik: String(body.nik || ''),
         nama: String(body.nama || ''),
@@ -64,9 +71,10 @@ module.exports = async (req, res) => {
     }
 
     res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-    return res.status(405).end(`Method ${method} Not Allowed`);
+    return res.status(405).json({ error: `Method ${method} Not Allowed` });
   } catch (err) {
-    console.error('Error di API Manage HD:', err);
+    console.error('Error Server API:', err);
+    // Kembalikan JSON walau server crash agar frontend tidak error "Unexpected token"
     return res.status(500).json({ error: err.message || 'Terjadi kesalahan pada server Firebase' });
   }
 };
