@@ -1,16 +1,17 @@
 {
+  "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/bot",
+      "source": "/api/bot/(.*)",
       "destination": "/api/bot.js"
     },
     {
-      "source": "/api/users",
+      "source": "/api/users/(.*)",
       "destination": "/api/users.js"
     },
     {
-      "source": "/api/manage_hd",
-  "destination": "/api/manage_hd.js"
+      "source": "/api/manage_hd/(.*)",
+      "destination": "/api/manage_hd.js"
     },
     {
       "source": "/manage_hd",
