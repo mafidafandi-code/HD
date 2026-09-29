@@ -10,6 +10,10 @@
       "destination": "/api/users.js"
     },
     {
+      "source": "/api/manage_hd",
+      "destination": "/api/manage_hd.js"
+    },
+    {
       "source": "/manage_hd",
       "destination": "/manage_hd.html"
     },
