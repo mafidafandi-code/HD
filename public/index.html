@@ -353,11 +353,11 @@
             </button>
 
             <!-- Tombol Tandai Closed -->
-            ${activeTab !== 'closed' ? `
-            <button onclick="handleCloseTicket('${t.tiket_id}')" 
-                    class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-emerald-700">
-              ✅ Tandai Closed
-            </button>` : ''}
+            ${(activeTab !== 'open' && activeTab !== 'closed') ? `
+              <button onclick="handleCloseTicket('${t.tiket_id}')" 
+                      class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-emerald-700">
+                ✅ Tandai Closed
+              </button>` : ''}
           </div>
         `;
         container.appendChild(div);
