@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - CRUD Data Permintaan</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 p-4 md:p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">Manajemen Data Permintaan</h1>
+        <p class="text-sm text-slate-500">Kelola daftar permintaan barang/layanan secara efisien.</p>
+      </div>
+      <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-lg text-sm flex items-center gap-2 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Tambah Permintaan
+      </button>
+    </div>
+
+    <!-- Table Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <th class="p-4">ID</th>
+              <th class="p-4">Pemohon</th>
+              <th class="p-4">Nama Permintaan</th>
+              <th class="p-4">Jumlah</th>
+              <th class="p-4">Status</th>
+              <th class="p-4">Keterangan</th>
+              <th class="p-4 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-200 text-sm">
+            <tr>
+              <td colspan="7" class="text-center p-6 text-slate-400">Memuat data permintaan...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Form (Tambah/Edit) -->
+  <div id="modalForm" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 id="modalTitle" class="text-lg font-bold text-slate-900">Tambah Permintaan</h2>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <form id="requestForm" onsubmit="handleSave(event)" class="space-y-4">
+        <input type="hidden" id="permintaanId">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Pemohon</label>
+          <input type="text" id="pemohon" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Permintaan / Barang</label>
+          <input type="text" id="namaPermintaan" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Jumlah</label>
+            <input type="number" id="jumlah" min="1" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Status</label>
+            <select id="status" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm bg-white">
+              <option value="Pending">Pending</option>
+              <option value="Diproses">Diproses</option>
+              <option value="Disetujui">Disetujui</option>
+              <option value="Ditolak">Ditolak</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Keterangan</label>
+          <textarea id="keterangan" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm" placeholder="Catatan tambahan..."></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Batal</button>
+          <button type="submit" id="btnSave" class="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api/admin-crud';
+
+    // Load Data saat halaman siap
+    document.addEventListener('DOMContentLoaded', loadPermintaan);
+
+    // Get Data
+    async function loadPermintaan() {
+      const tbody = document.getElementById('tableBody');
+      try {
+        const res = await fetch(API_URL);
+        const result = await res.json();
+
+        if (!result.success || result.data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="text-center p-6 text-slate-400">Belum ada data permintaan.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = result.data.map(item => `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="p-4 font-mono text-xs text-slate-500">#${item.id}</td>
+            <td class="p-4 font-medium text-slate-900">${escapeHtml(item.pemohon)}</td>
+            <td class="p-4 text-slate-700">${escapeHtml(item.namaPermintaan)}</td>
+            <td class="p-4 font-medium text-slate-800">${item.jumlah}</td>
+            <td class="p-4">${getStatusBadge(item.status)}</td>
+            <td class="p-4 text-slate-500 text-xs">${escapeHtml(item.keterangan || '-')}</td>
+            <td class="p-4 text-center">
+              <button onclick='openModal(${JSON.stringify(item)})' class="text-indigo-600 hover:text-indigo-900 font-medium mr-3">Edit</button>
+              <button onclick="handleDelete(${item.id})" class="text-red-600 hover:text-red-900 font-medium">Hapus</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center p-6 text-red-500">Gagal memuat data permintaan.</td></tr>`;
+      }
+    }
+
+    // Save Data (Create / Update)
+    async function handleSave(e) {
+      e.preventDefault();
+      const id = document.getElementById('permintaanId').value;
+      const bodyData = {
+        id: id ? parseInt(id) : null,
+        pemohon: document.getElementById('pemohon').value,
+        namaPermintaan: document.getElementById('namaPermintaan').value,
+        jumlah: parseInt(document.getElementById('jumlah').value),
+        status: document.getElementById('status').value,
+        keterangan: document.getElementById('keterangan').value
+      };
+
+      const method = id ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(API_URL, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyData)
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          closeModal();
+          loadPermintaan();
+        } else {
+          alert('Gagal menyimpan: ' + result.message);
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan koneksi.');
+      }
+    }
+
+    // Delete Data
+    async function handleDelete(id) {
+      if (!confirm('Apakah Anda yakin ingin menghapus permintaan ini?')) return;
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          loadPermintaan();
+        } else {
+          alert('Gagal menghapus data.');
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan koneksi.');
+      }
+    }
+
+    // Modal Helpers
+    function openModal(data = null) {
+      document.getElementById('requestForm').reset();
+      const modal = document.getElementById('modalForm');
+      
+      if (data) {
+        document.getElementById('modalTitle').innerText = 'Edit Permintaan';
+        document.getElementById('permintaanId').value = data.id;
+        document.getElementById('pemohon').value = data.pemohon;
+        document.getElementById('namaPermintaan').value = data.namaPermintaan;
+        document.getElementById('jumlah').value = data.jumlah;
+        document.getElementById('status').value = data.status;
+        document.getElementById('keterangan').value = data.keterangan || '';
+      } else {
+        document.getElementById('modalTitle').innerText = 'Tambah Permintaan Baru';
+        document.getElementById('permintaanId').value = '';
+      }
+      
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('modalForm');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // UI Helper Functions
+    function getStatusBadge(status) {
+      const styles = {
+        'Pending': 'bg-amber-100 text-amber-800 border-amber-200',
+        'Diproses': 'bg-blue-100 text-blue-800 border-blue-200',
+        'Disetujui': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        'Ditolak': 'bg-rose-100 text-rose-800 border-rose-200'
+      };
+      return `<span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${styles[status] || 'bg-slate-100 text-slate-800'}">${status}</span>`;
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
