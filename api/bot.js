@@ -60,6 +60,14 @@ export default async function handler(req, res) {
         const message = ctx.message;
         if (!message) return;
 
+        // ====================================================
+        // PENGECEKAN KHUSUS: CHAT PRIVATE / JAPRI DITOLAK
+        // ====================================================
+        if (message.chat.type === 'private') {
+          await ctx.reply('⚠️ Maaf, bot ini hanya dapat digunakan di dalam Grup Telegram teknisi/HD, tidak melayani chat pribadi (japri).');
+          return; // Berhenti di sini, tidak diproses ke Firestore
+        }
+
         const text = message.text || message.caption || '';
         const segmenInfo = detectSegmen(text);
         const currentFileId = extractFileIds(message);
@@ -207,7 +215,7 @@ export default async function handler(req, res) {
         // ====================================================
         // 4. PESAN DITOLAK (Jika tanpa hashtag dan bukan reply tiket valid)
         // ====================================================
-        await ctx.reply('⚠️ Pastikan pesan yang kamu kirim meREPLY dari pesan sebelumnya agar kami mengerti permintaan mana yang kamu maksud.\n\ Mohon sertakan hashtag segmen (#moban untuk : ass b2c, #helprekan : untuk ass b2b, #tolong : untuk psb) untuk membuat tiket baru.', {
+        await ctx.reply('⚠️ Pastikan pesan yang kamu kirim meREPLY dari pesan sebelumnya agar kami mengerti permintaan mana yang kamu maksud.\n\nMohon sertakan hashtag segmen (#moban untuk : ass b2c, #helprekan : untuk ass b2b, #tolong : untuk psb) untuk membuat tiket baru.', {
           reply_to_message_id: message.message_id
         });
 
