@@ -339,7 +339,19 @@
       loadChatMessages(tiketId);
     }
 
-    async function loadChatMessages(tiketId) {
+    // Fungsi untuk memuka Gambar di Modal Zoom
+function openImageModal(url) {
+  document.getElementById('modal-zoom-img').src = url;
+  document.getElementById('image-modal').classList.remove('hidden');
+}
+
+// Fungsi untuk menutup Modal Zoom
+function closeImageModal() {
+  document.getElementById('image-modal').classList.add('hidden');
+  document.getElementById('modal-zoom-img').src = '';
+}
+
+async function loadChatMessages(tiketId) {
   try {
     const res = await fetch(`/api/tickets?action=get_chat&tiket_id=${encodeURIComponent(tiketId)}`);
     const data = await res.json();
@@ -356,15 +368,17 @@
         let imagesHtml = '';
         if (msg.file_id) {
           try {
-            // Panggil API get-file (sudah support koma)
             const imgRes = await fetch(`/api/get-file?file_id=${encodeURIComponent(msg.file_id)}`);
             const imgData = await imgRes.json();
 
             if (imgRes.ok && imgData.urls && imgData.urls.length > 0) {
+              // Ganti tag <a> dengan onclick event menuju openImageModal
               const imgTags = imgData.urls.map(url => `
-                <a href="${url}" target="_blank" class="block">
-                  <img src="${url}" class="w-full h-32 object-cover rounded-lg border hover:opacity-90 transition cursor-pointer">
-                </a>
+                <div class="block overflow-hidden rounded-lg border border-black/10">
+                  <img src="${url}" 
+                       onclick="openImageModal('${url}')" 
+                       class="w-full h-32 object-cover hover:scale-105 transition duration-200 cursor-zoom-in">
+                </div>
               `).join('');
 
               imagesHtml = `
