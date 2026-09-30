@@ -413,41 +413,6 @@ function closeImageModal() {
     alert('⚠️ Gagal menyimpan kategori pekerjaan.');
   }
 }
-
-async function handleCloseTicket(tiketId) {
-  // 1. Ambil elemen select dan nilainya
-  const selectElem = document.getElementById(`select-kategori-${tiketId}`);
-  const selectedKategori = selectElem ? selectElem.value : '';
-
-  // 2. Daftar hashtag bawaan yang BUKAN kategori pekerjaan
-  const hashtagBawaan = ['#moban', '#helprekan', '#tolong', ''];
-
-  // 3. Validasi: Jika belum memilih kategori pekerjaan, stop & tampilkan alert!
-  if (!selectedKategori || hashtagBawaan.includes(selectedKategori.toLowerCase())) {
-    alert('⚠️ Tiket tidak dapat di-Close!\nHarap pilih Kategori Pekerjaan pada dropdown terlebih dahulu.');
-    if (selectElem) selectElem.focus();
-    return; // Berhenti di sini (batal Close)
-  }
-
-  // 4. Konfirmasi Close
-  if (!confirm(`Apakah Anda yakin ingin menutup tiket #${tiketId} dengan kategori "${selectedKategori}"?`)) {
-    return;
-  }
-
-  // 5. Proses Close ke Firestore
-  try {
-    await clientDb.collection('permintaan').doc(tiketId).update({
-      status: 'CLOSED',
-      kategori_pekerjaan: selectedKategori,
-      timestamp_close: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    alert(`✅ Tiket #${tiketId} berhasil di-Close.`);
-  } catch (err) {
-    console.error('Error Close Tiket:', err);
-    alert('❌ Gagal menutup tiket.');
-  }
-}
     
 async function loadChatMessages(tiketId) {
   try {
