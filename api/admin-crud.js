@@ -4,60 +4,96 @@ export default async function handler(req, res) {
   const { method } = req;
 
   try {
-    // 1. READ ALL REQUESTS
+    // 1. READ ALL PERMINTAAN
     if (method === 'GET') {
       const snapshot = await db.collection('permintaan').get();
-      const requests = [];
+      const permintaan = [];
       snapshot.forEach(doc => {
         const d = doc.data();
-        requests.push({
+        permintaan.push({
           id: doc.id,
           ...d,
-          created_at: d.created_at?.toDate?.() || null
+          timestamp_created: d.timestamp_created?.toDate?.() || d.timestamp_created || null,
+          timestamp_taken: d.timestamp_taken?.toDate?.() || d.timestamp_taken || null,
+          timestamp_close: d.timestamp_close?.toDate?.() || d.timestamp_close || null
         });
       });
-      return res.status(200).json({ success: true, requests });
+      return res.status(200).json({ success: true, permintaan });
     }
 
-    // 2. CREATE REQUEST
+    // 2. CREATE PERMINTAAN
     if (method === 'POST') {
-      const { pemohon, nama_permintaan, jumlah, status, keterangan } = req.body || {};
+      const {
+        pesan,
+        kategori_pekerjaan,
+        keterangan,
+        segmen,
+        status,
+        nama_teknisi,
+        username_teknisi,
+        id_telegram_hd,
+        id_telegram_teknisi,
+        tiket_id
+      } = req.body || {};
 
-      if (!pemohon || !nama_permintaan || !jumlah) {
-        return res.status(400).json({ error: 'Pemohon, Nama Permintaan, dan Jumlah wajib diisi' });
+      if (!pesan && !kategori_pekerjaan) {
+        return res.status(400).json({ error: 'Pesan atau Kategori Pekerjaan wajib diisi' });
       }
 
-      const newRequest = {
-        pemohon: String(pemohon).trim(),
-        nama_permintaan: String(nama_permintaan).trim(),
-        jumlah: Number(jumlah),
-        status: status ? String(status).trim().toUpperCase() : 'PENDING',
+      const newPermintaan = {
+        pesan: pesan ? String(pesan).trim() : '',
+        kategori_pekerjaan: kategori_pekerjaan ? String(kategori_pekerjaan).trim() : '',
         keterangan: keterangan ? String(keterangan).trim() : '',
-        created_at: admin.firestore.FieldValue.serverTimestamp()
+        segmen: segmen ? String(segmen).trim().toUpperCase() : 'B2B',
+        status: status ? String(status).trim().toUpperCase() : 'PENDING',
+        nama_teknisi: nama_teknisi ? String(nama_teknisi).trim() : '',
+        username_teknisi: username_teknisi ? String(username_teknisi).trim() : '',
+        id_telegram_hd: id_telegram_hd ? String(id_telegram_hd).trim() : null,
+        id_telegram_teknisi: id_telegram_teknisi ? String(id_telegram_teknisi).trim() : null,
+        tiket_id: tiket_id ? String(tiket_id).trim() : '',
+        timestamp_created: admin.firestore.FieldValue.serverTimestamp()
       };
 
-      const docRef = await db.collection('permintaan').add(newRequest);
+      const docRef = await db.collection('permintaan').add(newPermintaan);
       return res.status(200).json({ success: true, id: docRef.id });
     }
 
-    // 3. UPDATE REQUEST
+    // 3. UPDATE PERMINTAAN
     if (method === 'PUT') {
-      const { id, pemohon, nama_permintaan, jumlah, status, keterangan } = req.body || {};
+      const {
+        id,
+        pesan,
+        kategori_pekerjaan,
+        keterangan,
+        segmen,
+        status,
+        nama_teknisi,
+        username_teknisi,
+        id_telegram_hd,
+        id_telegram_teknisi,
+        tiket_id
+      } = req.body || {};
+
       if (!id) return res.status(400).json({ error: 'ID Permintaan wajib diisi' });
 
       const updateData = {
-        pemohon: String(pemohon).trim(),
-        nama_permintaan: String(nama_permintaan).trim(),
-        jumlah: Number(jumlah),
-        status: String(status).trim().toUpperCase(),
-        keterangan: keterangan ? String(keterangan).trim() : ''
+        pesan: pesan ? String(pesan).trim() : '',
+        kategori_pekerjaan: kategori_pekerjaan ? String(kategori_pekerjaan).trim() : '',
+        keterangan: keterangan ? String(keterangan).trim() : '',
+        segmen: segmen ? String(segmen).trim().toUpperCase() : '',
+        status: status ? String(status).trim().toUpperCase() : 'PENDING',
+        nama_teknisi: nama_teknisi ? String(nama_teknisi).trim() : '',
+        username_teknisi: username_teknisi ? String(username_teknisi).trim() : '',
+        id_telegram_hd: id_telegram_hd ? String(id_telegram_hd).trim() : null,
+        id_telegram_teknisi: id_telegram_teknisi ? String(id_telegram_teknisi).trim() : null,
+        tiket_id: tiket_id ? String(tiket_id).trim() : ''
       };
 
       await db.collection('permintaan').doc(id).update(updateData);
       return res.status(200).json({ success: true });
     }
 
-    // 4. DELETE REQUEST
+    // 4. DELETE PERMINTAAN
     if (method === 'DELETE') {
       const { id } = req.query;
       if (!id) return res.status(400).json({ error: 'ID Permintaan wajib diisi' });
