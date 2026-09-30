@@ -7,13 +7,13 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen text-gray-800 p-6">
-  <div class="max-w-6xl mx-auto">
+  <div class="max-w-7xl mx-auto">
     
     <!-- Top Header -->
     <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm mb-6">
       <div>
-        <h1 class="text-xl font-bold text-blue-600">Manajemen Data Permintaan (permintaan)</h1>
-        <p class="text-xs text-gray-500">Tambah, Edit, & Hapus data Permintaan Layanan</p>
+        <h1 class="text-xl font-bold text-blue-600">Manajemen Data Permintaan</h1>
+        <p class="text-xs text-gray-500">Menampilkan 21 Kolom Data Firestore `permintaan`</p>
       </div>
       <div class="flex items-center space-x-2">
         <a href="/" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium border">⬅️ Kembali ke Portal</a>
@@ -22,16 +22,17 @@
     </div>
 
     <!-- Table Permintaan -->
-    <div class="bg-white rounded-xl shadow-sm overflow-hidden border">
-      <table class="w-full text-left text-sm">
-        <thead class="bg-gray-50 border-b text-gray-600 font-semibold">
+    <div class="bg-white rounded-xl shadow-sm overflow-x-auto border">
+      <table class="w-full text-left text-sm min-w-[1000px]">
+        <thead class="bg-gray-50 border-b text-gray-600 font-semibold text-xs">
           <tr>
-            <th class="p-3">Tiket ID</th>
+            <th class="p-3">Tiket / ID Permintaan</th>
             <th class="p-3">Kategori</th>
-            <th class="p-3">Pesan / Detail</th>
+            <th class="p-3">Pesan</th>
             <th class="p-3">Teknisi</th>
             <th class="p-3">Segmen</th>
             <th class="p-3">Status</th>
+            <th class="p-3">Dibuat</th>
             <th class="p-3 text-right">Aksi</th>
           </tr>
         </thead>
@@ -42,17 +43,37 @@
     </div>
   </div>
 
+  <!-- MODAL DETAIL SEMUA 21 KOLOM -->
+  <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-3 mb-4">
+        <h3 class="text-lg font-bold text-gray-800">Detail Lengkap Data Permintaan (21 Kolom)</h3>
+        <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+      </div>
+      <div id="detail-content" class="grid grid-cols-2 gap-3 text-xs">
+        <!-- Content dirender via JS -->
+      </div>
+      <div class="mt-6 flex justify-end">
+        <button onclick="closeDetailModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs font-semibold">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL FORM INPUT/EDIT -->
   <div id="permintaan-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
       <h3 id="modal-title" class="text-lg font-bold mb-4 text-gray-800">Tambah Permintaan</h3>
       <form id="permintaan-form" onsubmit="savePermintaan(event)" class="space-y-3">
         <input type="hidden" id="form-id">
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-3 gap-3">
           <div>
             <label class="block text-xs font-semibold text-gray-700">Tiket ID</label>
-            <input type="text" id="form-tiket-id" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="TKT-XXXX">
+            <input type="text" id="form-tiket-id" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">ID Permintaan</label>
+            <input type="text" id="form-id-permintaan" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
             <label class="block text-xs font-semibold text-gray-700">Kategori Pekerjaan *</label>
@@ -97,6 +118,36 @@
           </div>
         </div>
 
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">ID Telegram Teknisi</label>
+            <input type="text" id="form-id-tg-teknisi" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">ID Telegram HD</label>
+            <input type="text" id="form-id-tg-hd" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">Chat ID</label>
+            <input type="text" id="form-chat-id" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">Message ID</label>
+            <input type="text" id="form-message-id" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">Msg Type</label>
+            <input type="text" id="form-msg-type" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="text / document">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">Sender Type</label>
+            <input type="text" id="form-sender-type" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="user / hd / bot">
+          </div>
+        </div>
+
         <div>
           <label class="block text-xs font-semibold text-gray-700">Keterangan</label>
           <textarea id="form-keterangan" rows="2" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Catatan tambahan..."></textarea>
@@ -133,7 +184,7 @@
       tbody.innerHTML = '';
 
       if (permintaanList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Belum ada data permintaan.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-gray-500">Belum ada data permintaan.</td></tr>`;
         return;
       }
 
@@ -141,14 +192,26 @@
         const tr = document.createElement('tr');
         tr.className = "border-b hover:bg-gray-50";
 
+        const formattedDate = item.timestamp_created 
+          ? new Date(item.timestamp_created).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })
+          : '-';
+
         tr.innerHTML = `
-          <td class="p-3 font-mono text-xs text-blue-600 font-semibold">${item.tiket_id || '-'}</td>
-          <td class="p-3 font-medium">${item.kategori_pekerjaan || '-'}</td>
-          <td class="p-3 text-xs max-w-xs truncate">${item.pesan || '-'}</td>
-          <td class="p-3 text-xs">${item.nama_teknisi ? item.nama_teknisi : '-'}</td>
-          <td class="p-3"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded font-bold">${item.segmen || '-'}</span></td>
+          <td class="p-3 font-mono text-xs text-blue-600 font-semibold">
+            <div>${escapeHtml(item.tiket_id || '-')}</div>
+            <div class="text-[10px] text-gray-400">${escapeHtml(item.id_permintaan || '')}</div>
+          </td>
+          <td class="p-3 font-medium text-xs">${escapeHtml(item.kategori_pekerjaan || '-')}</td>
+          <td class="p-3 text-xs max-w-xs truncate">${escapeHtml(item.pesan || '-')}</td>
+          <td class="p-3 text-xs">
+            <div>${escapeHtml(item.nama_teknisi || '-')}</div>
+            <div class="text-[10px] text-gray-400">${item.username_teknisi ? '@' + item.username_teknisi : ''}</div>
+          </td>
+          <td class="p-3"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded font-bold">${escapeHtml(item.segmen || '-')}</span></td>
           <td class="p-3">${getStatusBadge(item.status)}</td>
+          <td class="p-3 text-xs text-gray-500">${formattedDate}</td>
           <td class="p-3 text-right space-x-1">
+            <button onclick="viewDetail('${item.id}')" class="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded hover:bg-blue-100">🔍 Detail</button>
             <button onclick="editPermintaan('${item.id}')" class="text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-1 rounded hover:bg-yellow-100">Edit</button>
             <button onclick="deletePermintaan('${item.id}')" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded hover:bg-red-100">Hapus</button>
           </td>
@@ -157,15 +220,65 @@
       });
     }
 
+    function viewDetail(id) {
+      const item = permintaanList.find(x => x.id === id);
+      if (!item) return;
+
+      const container = document.getElementById('detail-content');
+      
+      const fields = [
+        { label: 'Document ID (Firestore)', val: item.id },
+        { label: 'Tiket ID', val: item.tiket_id },
+        { label: 'ID Permintaan', val: item.id_permintaan },
+        { label: 'Kategori Pekerjaan', val: item.kategori_pekerjaan },
+        { label: 'Pesan', val: item.pesan, fullWidth: true },
+        { label: 'Nama Teknisi', val: item.nama_teknisi },
+        { label: 'Username Teknisi', val: item.username_teknisi },
+        { label: 'ID Telegram Teknisi', val: item.id_telegram_teknisi },
+        { label: 'ID Telegram HD', val: item.id_telegram_hd },
+        { label: 'Chat ID', val: item.chat_id },
+        { label: 'Message ID', val: item.message_id },
+        { label: 'Reply To Message ID', val: item.reply_to_message_id },
+        { label: 'Thread ID', val: item.thread_id },
+        { label: 'File ID', val: item.file_id },
+        { label: 'Msg Type', val: item.msg_type },
+        { label: 'Sender Type', val: item.sender_type },
+        { label: 'Segmen', val: item.segmen },
+        { label: 'Status', val: item.status },
+        { label: 'Keterangan', val: item.keterangan, fullWidth: true },
+        { label: 'Timestamp Created', val: formatDate(item.timestamp_created) },
+        { label: 'Timestamp Taken', val: formatDate(item.timestamp_taken) },
+        { label: 'Timestamp Close', val: formatDate(item.timestamp_close) }
+      ];
+
+      container.innerHTML = fields.map(f => `
+        <div class="${f.fullWidth ? 'col-span-2' : ''} bg-gray-50 p-2 rounded border">
+          <span class="text-gray-500 block font-semibold text-[10px] uppercase">${f.label}</span>
+          <span class="text-gray-800 font-mono text-xs break-all">${escapeHtml(f.val || '-')}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('detail-modal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+    }
+
+    function formatDate(ts) {
+      if (!ts) return '-';
+      return new Date(ts).toLocaleString('id-ID');
+    }
+
     function getStatusBadge(status) {
       const st = String(status || '').toUpperCase();
       let colorClass = 'bg-gray-100 text-gray-800';
-      if (st === 'PENDING') colorClass = 'bg-amber-100 text-amber-800';
-      else if (st === 'OPEN' || st === 'PROGRESS') colorClass = 'bg-blue-100 text-blue-800';
-      else if (st === 'CLOSED') colorClass = 'bg-green-100 text-green-800';
-      else if (st === 'CANCEL') colorClass = 'bg-red-100 text-red-800';
+      if (st === 'PENDING') colorClass = 'bg-amber-100 text-amber-800 border-amber-200';
+      else if (st === 'OPEN' || st === 'PROGRESS') colorClass = 'bg-blue-100 text-blue-800 border-blue-200';
+      else if (st === 'CLOSED') colorClass = 'bg-green-100 text-green-800 border-green-200';
+      else if (st === 'CANCEL') colorClass = 'bg-red-100 text-red-800 border-red-200';
 
-      return `<span class="${colorClass} text-xs px-2 py-0.5 rounded font-bold">${st || '-'}</span>`;
+      return `<span class="${colorClass} text-xs px-2 py-0.5 rounded font-bold border">${st || '-'}</span>`;
     }
 
     function openModal() {
@@ -185,12 +298,19 @@
 
       document.getElementById('form-id').value = item.id;
       document.getElementById('form-tiket-id').value = item.tiket_id || '';
+      document.getElementById('form-id-permintaan').value = item.id_permintaan || '';
       document.getElementById('form-kategori').value = item.kategori_pekerjaan || '';
       document.getElementById('form-pesan').value = item.pesan || '';
       document.getElementById('form-nama-teknisi').value = item.nama_teknisi || '';
       document.getElementById('form-username-teknisi').value = item.username_teknisi || '';
       document.getElementById('form-segmen').value = item.segmen || 'B2B';
       document.getElementById('form-status').value = item.status || 'PENDING';
+      document.getElementById('form-id-tg-teknisi').value = item.id_telegram_teknisi || '';
+      document.getElementById('form-id-tg-hd').value = item.id_telegram_hd || '';
+      document.getElementById('form-chat-id').value = item.chat_id || '';
+      document.getElementById('form-message-id').value = item.message_id || '';
+      document.getElementById('form-msg-type').value = item.msg_type || 'text';
+      document.getElementById('form-sender-type').value = item.sender_type || 'user';
       document.getElementById('form-keterangan').value = item.keterangan || '';
 
       document.getElementById('modal-title').innerText = 'Edit Permintaan';
@@ -203,12 +323,19 @@
       const payload = {
         id,
         tiket_id: document.getElementById('form-tiket-id').value,
+        id_permintaan: document.getElementById('form-id-permintaan').value,
         kategori_pekerjaan: document.getElementById('form-kategori').value,
         pesan: document.getElementById('form-pesan').value,
         nama_teknisi: document.getElementById('form-nama-teknisi').value,
         username_teknisi: document.getElementById('form-username-teknisi').value,
         segmen: document.getElementById('form-segmen').value,
         status: document.getElementById('form-status').value,
+        id_telegram_teknisi: document.getElementById('form-id-tg-teknisi').value,
+        id_telegram_hd: document.getElementById('form-id-tg-hd').value,
+        chat_id: document.getElementById('form-chat-id').value,
+        message_id: document.getElementById('form-message-id').value,
+        msg_type: document.getElementById('form-msg-type').value,
+        sender_type: document.getElementById('form-sender-type').value,
         keterangan: document.getElementById('form-keterangan').value
       };
 
@@ -250,6 +377,10 @@
       } catch (err) {
         alert('Gagal menghapus permintaan');
       }
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
   </script>
 </body>
