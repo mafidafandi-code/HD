@@ -215,9 +215,10 @@ export default async function handler(req, res) {
         // ====================================================
         // 4. PESAN DITOLAK (Jika tanpa hashtag dan bukan reply tiket valid)
         // ====================================================
-        await ctx.reply('⚠️ Pastikan pesan yang kamu kirim meREPLY dari pesan sebelumnya agar kami mengerti permintaan mana yang kamu maksud.\n\nMohon sertakan hashtag segmen (#moban untuk : ass b2c, #helprekan : untuk ass b2b, #tolong : untuk psb) untuk membuat tiket baru.', {
-          reply_to_message_id: message.message_id
-        });
+        //await ctx.reply('⚠️ Pastikan pesan yang kamu kirim meREPLY dari pesan sebelumnya agar kami mengerti permintaan mana yang kamu maksud.\n\nMohon sertakan hashtag segmen (#moban untuk : ass b2c, #helprekan : untuk ass b2b, #tolong : untuk psb) untuk membuat tiket baru.', {
+          //reply_to_message_id: message.message_id
+        //});
+        return;
 
       } catch (err) {
         console.error('Error Processing Message:', err);
