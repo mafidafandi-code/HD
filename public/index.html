@@ -310,16 +310,57 @@
             <p class="text-gray-800 font-medium">${escapeHtml(t.pesan)}</p>
             <p class="text-xs text-gray-400">Teknisi: <span class="font-semibold text-gray-600">${t.nama_teknisi}</span> | Waktu: ${dateStr}</p>
           </div>
-          <div class="flex items-center space-x-2">
-            <button onclick="openChatModal('${t.tiket_id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center space-x-1">
-              <span>💬 Balas</span>
-            </button>
-            ${activeTab === 'progress' ? `
-              <button onclick="markAsClosed('${t.tiket_id}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                ✅ Tandai Closed
-              </button>
-            ` : ''}
-          </div>
+          <!-- HTML Card Tiket -->
+<div class="flex items-center gap-2">
+
+  <!-- 1. DROPDOWN KATEGORI PEKERJAAN (Tulis langsung di HTML) -->
+  <select id="select-kategori-${ticket.tiket_id}" 
+          onchange="updateKategoriPekerjaan('${ticket.tiket_id}', this.value)"
+          class="text-xs border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <option value="">-- Pilih Kategori Pekerjaan --</option>
+    <option value="/MO" ${ticket.kategori_pekerjaan === '/MO' ? 'selected' : ''}>/MO</option>
+    <option value="/DO" ${ticket.kategori_pekerjaan === '/DO' ? 'selected' : ''}>/DO</option>
+    <option value="/AO" ${ticket.kategori_pekerjaan === '/AO' ? 'selected' : ''}>/AO</option>
+    <option value="/PDA" ${ticket.kategori_pekerjaan === '/PDA' ? 'selected' : ''}>/PDA</option>
+    <option value="/Config" ${ticket.kategori_pekerjaan === '/Config' ? 'selected' : ''}>/Config</option>
+    <option value="/Reboot" ${ticket.kategori_pekerjaan === '/Reboot' ? 'selected' : ''}>/Reboot</option>
+    <option value="/SSID/Pass" ${ticket.kategori_pekerjaan === '/SSID/Pass' ? 'selected' : ''}>/SSID/Pass</option>
+    <option value="/Embassy" ${ticket.kategori_pekerjaan === '/Embassy' ? 'selected' : ''}>/Embassy</option>
+    <option value="/CekPort" ${ticket.kategori_pekerjaan === '/CekPort' ? 'selected' : ''}>/CekPort</option>
+    <option value="/Downtime" ${ticket.kategori_pekerjaan === '/Downtime' ? 'selected' : ''}>/Downtime</option>
+    <option value="/Share" ${ticket.kategori_pekerjaan === '/Share' ? 'selected' : ''}>/Share</option>
+    <option value="/CekInet" ${ticket.kategori_pekerjaan === '/CekInet' ? 'selected' : ''}>/CekInet</option>
+    <option value="/Client" ${ticket.kategori_pekerjaan === '/Client' ? 'selected' : ''}>/Client</option>
+    <option value="/OpenLAN" ${ticket.kategori_pekerjaan === '/OpenLAN' ? 'selected' : ''}>/OpenLAN</option>
+    <option value="/DetekONT" ${ticket.kategori_pekerjaan === '/DetekONT' ? 'selected' : ''}>/DetekONT</option>
+    <option value="/Close" ${ticket.kategori_pekerjaan === '/Close' ? 'selected' : ''}>/Close</option>
+    <option value="/FUP" ${ticket.kategori_pekerjaan === '/FUP' ? 'selected' : ''}>/FUP</option>
+    <option value="/CekPaket" ${ticket.kategori_pekerjaan === '/CekPaket' ? 'selected' : ''}>/CekPaket</option>
+    <option value="/Bukis" ${ticket.kategori_pekerjaan === '/Bukis' ? 'selected' : ''}>/Bukis</option>
+    <option value="/Unbindusee" ${ticket.kategori_pekerjaan === '/Unbindusee' ? 'selected' : ''}>/Unbindusee</option>
+    <option value="/Cekpayment" ${ticket.kategori_pekerjaan === '/Cekpayment' ? 'selected' : ''}>/Cekpayment</option>
+    <option value="/Dispatch" ${ticket.kategori_pekerjaan === '/Dispatch' ? 'selected' : ''}>/Dispatch</option>
+    <option value="/Shutdown" ${ticket.kategori_pekerjaan === '/Shutdown' ? 'selected' : ''}>/Shutdown</option>
+    <option value="/Assign" ${ticket.kategori_pekerjaan === '/Assign' ? 'selected' : ''}>/Assign</option>
+    <option value="/Noshutdown" ${ticket.kategori_pekerjaan === '/Noshutdown' ? 'selected' : ''}>/Noshutdown</option>
+    <option value="/Openportlan" ${ticket.kategori_pekerjaan === '/Openportlan' ? 'selected' : ''}>/Openportlan</option>
+    <option value="/PelurusanBW" ${ticket.kategori_pekerjaan === '/PelurusanBW' ? 'selected' : ''}>/PelurusanBW</option>
+    <option value="/Redaman" ${ticket.kategori_pekerjaan === '/Redaman' ? 'selected' : ''}>/Redaman</option>
+  </select>
+
+  <!-- 2. TOMBOL BALAS -->
+  <button onclick="openChatModal('${ticket.tiket_id}')" 
+          class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-blue-700">
+    💬 Balas
+  </button>
+
+  <!-- 3. TOMBOL TANDAI CLOSED -->
+  <button onclick="handleCloseTicket('${ticket.tiket_id}')" 
+          class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-emerald-700">
+    ✅ Tandai Closed
+  </button>
+
+</div>
         `;
         container.appendChild(div);
       });
@@ -351,6 +392,63 @@ function closeImageModal() {
   document.getElementById('modal-zoom-img').src = '';
 }
 
+    async function updateKategoriPekerjaan(tiketId, kategoriBaru) {
+  if (!kategoriBaru) return;
+
+  try {
+    // Simpan ke database Firestore
+    await clientDb.collection('permintaan').doc(tiketId).update({
+      kategori_pekerjaan: kategoriBaru
+    });
+
+    // Update data di memori lokal (jika menggunakan variabel rawTicketsData)
+    if (typeof rawTicketsData !== 'undefined') {
+      const t = rawTicketsData.find(item => item.tiket_id === tiketId);
+      if (t) t.kategori_pekerjaan = kategoriBaru;
+    }
+
+    console.log(`Kategori tiket #${tiketId} disimpan: ${kategoriBaru}`);
+  } catch (error) {
+    console.error('Gagal menyimpan kategori:', error);
+    alert('⚠️ Gagal menyimpan kategori pekerjaan.');
+  }
+}
+
+async function handleCloseTicket(tiketId) {
+  // 1. Ambil elemen select dan nilainya
+  const selectElem = document.getElementById(`select-kategori-${tiketId}`);
+  const selectedKategori = selectElem ? selectElem.value : '';
+
+  // 2. Daftar hashtag bawaan yang BUKAN kategori pekerjaan
+  const hashtagBawaan = ['#moban', '#helprekan', '#tolong', ''];
+
+  // 3. Validasi: Jika belum memilih kategori pekerjaan, stop & tampilkan alert!
+  if (!selectedKategori || hashtagBawaan.includes(selectedKategori.toLowerCase())) {
+    alert('⚠️ Tiket tidak dapat di-Close!\nHarap pilih Kategori Pekerjaan pada dropdown terlebih dahulu.');
+    if (selectElem) selectElem.focus();
+    return; // Berhenti di sini (batal Close)
+  }
+
+  // 4. Konfirmasi Close
+  if (!confirm(`Apakah Anda yakin ingin menutup tiket #${tiketId} dengan kategori "${selectedKategori}"?`)) {
+    return;
+  }
+
+  // 5. Proses Close ke Firestore
+  try {
+    await clientDb.collection('permintaan').doc(tiketId).update({
+      status: 'CLOSED',
+      kategori_pekerjaan: selectedKategori,
+      timestamp_close: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    alert(`✅ Tiket #${tiketId} berhasil di-Close.`);
+  } catch (err) {
+    console.error('Error Close Tiket:', err);
+    alert('❌ Gagal menutup tiket.');
+  }
+}
+    
 async function loadChatMessages(tiketId) {
   try {
     const res = await fetch(`/api/tickets?action=get_chat&tiket_id=${encodeURIComponent(tiketId)}`);
