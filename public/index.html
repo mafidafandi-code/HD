@@ -313,41 +313,6 @@
           <!-- HTML Card Tiket -->
 <div class="flex items-center gap-2">
 
-  <!-- 1. DROPDOWN KATEGORI PEKERJAAN (Tulis langsung di HTML) -->
-  <select id="select-kategori-${ticket.tiket_id}" 
-          onchange="updateKategoriPekerjaan('${ticket.tiket_id}', this.value)"
-          class="text-xs border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-    <option value="">-- Pilih Kategori Pekerjaan --</option>
-    <option value="/MO" ${ticket.kategori_pekerjaan === '/MO' ? 'selected' : ''}>/MO</option>
-    <option value="/DO" ${ticket.kategori_pekerjaan === '/DO' ? 'selected' : ''}>/DO</option>
-    <option value="/AO" ${ticket.kategori_pekerjaan === '/AO' ? 'selected' : ''}>/AO</option>
-    <option value="/PDA" ${ticket.kategori_pekerjaan === '/PDA' ? 'selected' : ''}>/PDA</option>
-    <option value="/Config" ${ticket.kategori_pekerjaan === '/Config' ? 'selected' : ''}>/Config</option>
-    <option value="/Reboot" ${ticket.kategori_pekerjaan === '/Reboot' ? 'selected' : ''}>/Reboot</option>
-    <option value="/SSID/Pass" ${ticket.kategori_pekerjaan === '/SSID/Pass' ? 'selected' : ''}>/SSID/Pass</option>
-    <option value="/Embassy" ${ticket.kategori_pekerjaan === '/Embassy' ? 'selected' : ''}>/Embassy</option>
-    <option value="/CekPort" ${ticket.kategori_pekerjaan === '/CekPort' ? 'selected' : ''}>/CekPort</option>
-    <option value="/Downtime" ${ticket.kategori_pekerjaan === '/Downtime' ? 'selected' : ''}>/Downtime</option>
-    <option value="/Share" ${ticket.kategori_pekerjaan === '/Share' ? 'selected' : ''}>/Share</option>
-    <option value="/CekInet" ${ticket.kategori_pekerjaan === '/CekInet' ? 'selected' : ''}>/CekInet</option>
-    <option value="/Client" ${ticket.kategori_pekerjaan === '/Client' ? 'selected' : ''}>/Client</option>
-    <option value="/OpenLAN" ${ticket.kategori_pekerjaan === '/OpenLAN' ? 'selected' : ''}>/OpenLAN</option>
-    <option value="/DetekONT" ${ticket.kategori_pekerjaan === '/DetekONT' ? 'selected' : ''}>/DetekONT</option>
-    <option value="/Close" ${ticket.kategori_pekerjaan === '/Close' ? 'selected' : ''}>/Close</option>
-    <option value="/FUP" ${ticket.kategori_pekerjaan === '/FUP' ? 'selected' : ''}>/FUP</option>
-    <option value="/CekPaket" ${ticket.kategori_pekerjaan === '/CekPaket' ? 'selected' : ''}>/CekPaket</option>
-    <option value="/Bukis" ${ticket.kategori_pekerjaan === '/Bukis' ? 'selected' : ''}>/Bukis</option>
-    <option value="/Unbindusee" ${ticket.kategori_pekerjaan === '/Unbindusee' ? 'selected' : ''}>/Unbindusee</option>
-    <option value="/Cekpayment" ${ticket.kategori_pekerjaan === '/Cekpayment' ? 'selected' : ''}>/Cekpayment</option>
-    <option value="/Dispatch" ${ticket.kategori_pekerjaan === '/Dispatch' ? 'selected' : ''}>/Dispatch</option>
-    <option value="/Shutdown" ${ticket.kategori_pekerjaan === '/Shutdown' ? 'selected' : ''}>/Shutdown</option>
-    <option value="/Assign" ${ticket.kategori_pekerjaan === '/Assign' ? 'selected' : ''}>/Assign</option>
-    <option value="/Noshutdown" ${ticket.kategori_pekerjaan === '/Noshutdown' ? 'selected' : ''}>/Noshutdown</option>
-    <option value="/Openportlan" ${ticket.kategori_pekerjaan === '/Openportlan' ? 'selected' : ''}>/Openportlan</option>
-    <option value="/PelurusanBW" ${ticket.kategori_pekerjaan === '/PelurusanBW' ? 'selected' : ''}>/PelurusanBW</option>
-    <option value="/Redaman" ${ticket.kategori_pekerjaan === '/Redaman' ? 'selected' : ''}>/Redaman</option>
-  </select>
-
   <!-- 2. TOMBOL BALAS -->
   <button onclick="openChatModal('${ticket.tiket_id}')" 
           class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-blue-700">
