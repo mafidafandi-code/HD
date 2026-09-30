@@ -357,27 +357,7 @@ function closeImageModal() {
   document.getElementById('modal-zoom-img').src = '';
 }
 
-    async function updateKategoriPekerjaan(tiketId, kategoriBaru) {
-  if (!kategoriBaru) return;
-
-  try {
-    // Simpan ke database Firestore
-    await clientDb.collection('permintaan').doc(tiketId).update({
-      kategori_pekerjaan: kategoriBaru
-    });
-
-    // Update data di memori lokal (jika menggunakan variabel rawTicketsData)
-    if (typeof rawTicketsData !== 'undefined') {
-      const t = rawTicketsData.find(item => item.tiket_id === tiketId);
-      if (t) t.kategori_pekerjaan = kategoriBaru;
-    }
-
-    console.log(`Kategori tiket #${tiketId} disimpan: ${kategoriBaru}`);
-  } catch (error) {
-    console.error('Gagal menyimpan kategori:', error);
-    alert('⚠️ Gagal menyimpan kategori pekerjaan.');
-  }
-}
+    
     
 async function loadChatMessages(tiketId) {
   try {
