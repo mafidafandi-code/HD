@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manajemen User HD</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen text-gray-800 p-6">
+  <div class="max-w-6xl mx-auto">
+    
+    <!-- Top Header -->
+    <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm mb-6">
+      <div>
+        <h1 class="text-xl font-bold text-blue-600">Manajemen User Helpdesk (users_hd)</h1>
+        <p class="text-xs text-gray-500">Tambah, Edit, & Hapus data Personel HD</p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <a href="/" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium border">⬅️ Kembali ke Portal</a>
+        <button onclick="openModal()" class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-bold">+ Tambah User HD</button>
+      </div>
+    </div>
+
+    <!-- Table Users -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden border">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-gray-50 border-b text-gray-600 font-semibold">
+          <tr>
+            <th class="p-3">NIK</th>
+            <th class="p-3">Nama</th>
+            <th class="p-3">Username</th>
+            <th class="p-3">Segmen</th>
+            <th class="p-3">ID Telegram</th>
+            <th class="p-3">Status</th>
+            <th class="p-3 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="user-table-body">
+          <!-- Item user dirender via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL FORM INPUT/EDIT -->
+  <div id="user-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+      <h3 id="modal-title" class="text-lg font-bold mb-4 text-gray-800">Tambah User HD</h3>
+      <form id="user-form" onsubmit="saveUser(event)" class="space-y-3">
+        <input type="hidden" id="form-id">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">NIK *</label>
+            <input type="text" id="form-nik" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">Nama Lengkap *</label>
+            <input type="text" id="form-nama" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">Username</label>
+            <input type="text" id="form-username" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">Password *</label>
+            <input type="password" id="form-password" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">Segmen *</label>
+            <select id="form-segmen" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="B2B">B2B</option>
+              <option value="B2C">B2C</option>
+              <option value="PROVI">PROVI</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">Status *</label>
+            <select id="form-status" required class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700">ID Telegram</label>
+            <input type="text" id="form-id-telegram" class="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-4">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg text-sm font-semibold text-gray-600">Batal</button>
+          <button type="submit" id="save-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let usersList = [];
+
+    window.addEventListener('DOMContentLoaded', loadUsers);
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/users-hd');
+        const data = await res.json();
+        if (res.ok && data.success) {
+          usersList = data.users || [];
+          renderUserTable();
+        }
+      } catch (e) {
+        alert("Gagal memuat data user HD");
+      }
+    }
+
+    function renderUserTable() {
+      const tbody = document.getElementById('user-table-body');
+      tbody.innerHTML = '';
+
+      if (usersList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-500">Belum ada user HD.</td></tr>`;
+        return;
+      }
+
+      usersList.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.className = "border-b hover:bg-gray-50";
+
+        tr.innerHTML = `
+          <td class="p-3 font-semibold">${u.nik}</td>
+          <td class="p-3">${u.nama}</td>
+          <td class="p-3 font-mono text-xs">${u.username || '-'}</td>
+          <td class="p-3"><span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded font-bold">${u.segmen}</span></td>
+          <td class="p-3 text-xs font-mono">${u.id_telegram || '-'}</td>
+          <td class="p-3"><span class="${u.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} text-xs px-2 py-0.5 rounded font-bold">${u.status}</span></td>
+          <td class="p-3 text-right space-x-1">
+            <button onclick="editUser('${u.id}')" class="text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-1 rounded hover:bg-yellow-100">Edit</button>
+            <button onclick="deleteUser('${u.id}')" class="text-xs bg-red-50 text-red-600 border border-red-200 px-2 py-1 rounded hover:bg-red-100">Hapus</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openModal() {
+      document.getElementById('form-id').value = '';
+      document.getElementById('user-form').reset();
+      document.getElementById('modal-title').innerText = 'Tambah User HD';
+      document.getElementById('user-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('user-modal').classList.add('hidden');
+    }
+
+    function editUser(id) {
+      const u = usersList.find(x => x.id === id);
+      if (!u) return;
+
+      document.getElementById('form-id').value = u.id;
+      document.getElementById('form-nik').value = u.nik;
+      document.getElementById('form-nama').value = u.nama;
+      document.getElementById('form-username').value = u.username || '';
+      document.getElementById('form-password').value = u.password;
+      document.getElementById('form-segmen').value = u.segmen;
+      document.getElementById('form-status').value = u.status || 'ACTIVE';
+      document.getElementById('form-id-telegram').value = u.id_telegram || '';
+
+      document.getElementById('modal-title').innerText = 'Edit User HD';
+      document.getElementById('user-modal').classList.remove('hidden');
+    }
+
+    async function saveUser(e) {
+      e.preventDefault();
+      const id = document.getElementById('form-id').value;
+      const payload = {
+        id,
+        nik: document.getElementById('form-nik').value,
+        nama: document.getElementById('form-nama').value,
+        username: document.getElementById('form-username').value,
+        password: document.getElementById('form-password').value,
+        segmen: document.getElementById('form-segmen').value,
+        status: document.getElementById('form-status').value,
+        id_telegram: document.getElementById('form-id-telegram').value,
+      };
+
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/users-hd', {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          closeModal();
+          loadUsers();
+        } else {
+          alert(data.error || 'Gagal menyimpan user');
+        }
+      } catch (err) {
+        alert('Gagal mengirim data');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('Apakah Anda yakin ingin menghapus user ini?')) return;
+
+      try {
+        const res = await fetch(`/api/users-hd?id=${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          loadUsers();
+        } else {
+          alert(data.error || 'Gagal menghapus user');
+        }
+      } catch (err) {
+        alert('Gagal menghapus user');
+      }
+    }
+  </script>
+</body>
+</html>
