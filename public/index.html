@@ -331,37 +331,63 @@
     }
 
     async function loadChatMessages(tiketId) {
-      try {
-        const res = await fetch(`/api/tickets?action=get_chat&tiket_id=${encodeURIComponent(tiketId)}`);
-        const data = await res.json();
+  try {
+    const res = await fetch(`/api/tickets?action=get_chat&tiket_id=${encodeURIComponent(tiketId)}`);
+    const data = await res.json();
 
-        if (res.ok && data.success) {
-          const historyContainer = document.getElementById('chat-history');
-          historyContainer.innerHTML = '';
+    if (res.ok && data.success) {
+      const historyContainer = document.getElementById('chat-history');
+      historyContainer.innerHTML = '';
 
-          data.messages.forEach(msg => {
-            const isHD = msg.sender_type === 'HD';
-            const bubble = document.createElement('div');
-            bubble.className = `flex ${isHD ? 'justify-end' : 'justify-start'}`;
+      for (const msg of data.messages) {
+        const isHD = msg.sender_type === 'HD';
+        const bubble = document.createElement('div');
+        bubble.className = `flex ${isHD ? 'justify-end' : 'justify-start'}`;
 
-            bubble.innerHTML = `
-              <div class="max-w-[75%] rounded-lg p-3 ${isHD ? 'bg-blue-600 text-white' : 'bg-white border text-gray-800'}">
-                <p class="text-xs font-bold ${isHD ? 'text-blue-100' : 'text-blue-600'} mb-1">${isHD ? (msg.nama_hd || 'HD') : msg.nama_teknisi}</p>
-                <p class="text-sm whitespace-pre-wrap">${escapeHtml(msg.pesan)}</p>
-                <span class="text-[10px] block text-right mt-1 opacity-70">
-                  ${msg.timestamp_created ? new Date(msg.timestamp_created).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : ''}
-                </span>
-              </div>
-            `;
-            historyContainer.appendChild(bubble);
-          });
+        let imagesHtml = '';
+        if (msg.file_id) {
+          try {
+            // Panggil API get-file (sudah support koma)
+            const imgRes = await fetch(`/api/get-file?file_id=${encodeURIComponent(msg.file_id)}`);
+            const imgData = await imgRes.json();
 
-          historyContainer.scrollTop = historyContainer.scrollHeight;
+            if (imgRes.ok && imgData.urls && imgData.urls.length > 0) {
+              const imgTags = imgData.urls.map(url => `
+                <a href="${url}" target="_blank" class="block">
+                  <img src="${url}" class="w-full h-32 object-cover rounded-lg border hover:opacity-90 transition cursor-pointer">
+                </a>
+              `).join('');
+
+              imagesHtml = `
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                  ${imgTags}
+                </div>
+              `;
+            }
+          } catch (e) {
+            imagesHtml = `<p class="text-xs text-red-400 italic mb-1">[Gagal memuat gambar]</p>`;
+          }
         }
-      } catch (err) {
-        console.error("Gagal memuat chat:", err);
+
+        bubble.innerHTML = `
+          <div class="max-w-[80%] rounded-lg p-3 ${isHD ? 'bg-blue-600 text-white' : 'bg-white border text-gray-800'} shadow-sm">
+            <p class="text-xs font-bold ${isHD ? 'text-blue-100' : 'text-blue-600'} mb-1">${isHD ? (msg.nama_hd || 'HD') : msg.nama_teknisi}</p>
+            ${imagesHtml}
+            ${msg.pesan ? `<p class="text-sm whitespace-pre-wrap">${escapeHtml(msg.pesan)}</p>` : ''}
+            <span class="text-[10px] block text-right mt-1 opacity-70">
+              ${msg.timestamp_created ? new Date(msg.timestamp_created).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : ''}
+            </span>
+          </div>
+        `;
+        historyContainer.appendChild(bubble);
       }
+
+      historyContainer.scrollTop = historyContainer.scrollHeight;
     }
+  } catch (err) {
+    console.error("Gagal memuat chat:", err);
+  }
+}
 
     function closeChatModal() {
       document.getElementById('chat-modal').classList.add('hidden');
