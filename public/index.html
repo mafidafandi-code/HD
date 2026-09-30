@@ -364,65 +364,74 @@
       });
     }
 
-    async function updateKategoriPekerjaan(tiketId, kategoriBaru) {
-      if (!kategoriBaru) return;
+    // 1. Perbaikan fungsi Update Kategori
+async function updateKategoriPekerjaan(tiketId, kategoriBaru) {
+  if (!kategoriBaru) return;
 
-      try {
-        const res = await fetch('/api/update-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tiket_id: tiketId, kategori_pekerjaan: kategoriBaru })
-        });
-        const data = await res.json();
+  // Ambil data tiket saat ini dari memori untuk mengetahui status lamanya
+  const ticket = rawTicketsData.find(item => item.tiket_id === tiketId);
+  const currentStatus = ticket ? ticket.status : 'OPEN';
 
-        if (res.ok && data.success) {
-          const ticket = rawTicketsData.find(item => item.tiket_id === tiketId);
-          if (ticket) ticket.kategori_pekerjaan = kategoriBaru;
-        } else {
-          alert(data.error || 'Gagal menyimpan kategori');
-        }
-      } catch (err) {
-        console.error('Error update kategori:', err);
-      }
+  try {
+    const res = await fetch('/api/update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        tiket_id: tiketId, 
+        status: currentStatus, // Pastikan 'status' selalu terkirim!
+        kategori_pekerjaan: kategoriBaru 
+      })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      if (ticket) ticket.kategori_pekerjaan = kategoriBaru;
+    } else {
+      alert(data.error || 'Gagal menyimpan kategori');
     }
+  } catch (err) {
+    console.error('Error update kategori:', err);
+  }
+}
 
-    async function handleCloseTicket(tiketId) {
-      const selectElem = document.getElementById(`select-kategori-${tiketId}`);
-      const selectedKategori = selectElem ? selectElem.value : '';
-      const hashtagBawaan = ['#moban', '#helprekan', '#tolong', ''];
+// 2. Perbaikan fungsi Handle Close Ticket
+async function handleCloseTicket(tiketId) {
+  const selectElem = document.getElementById(`select-kategori-${tiketId}`);
+  const selectedKategori = selectElem ? selectElem.value : '';
+  const hashtagBawaan = ['#moban', '#helprekan', '#tolong', ''];
 
-      if (!selectedKategori || hashtagBawaan.includes(selectedKategori.toLowerCase())) {
-        alert('⚠️ Tiket tidak dapat di-Close!\nHarap pilih Kategori Pekerjaan pada dropdown terlebih dahulu.');
-        if (selectElem) selectElem.focus();
-        return;
-      }
+  if (!selectedKategori || hashtagBawaan.includes(selectedKategori.toLowerCase())) {
+    alert('⚠️ Tiket tidak dapat di-Close!\nHarap pilih Kategori Pekerjaan pada dropdown terlebih dahulu.');
+    if (selectElem) selectElem.focus();
+    return;
+  }
 
-      if (!confirm(`Apakah Anda yakin ingin menutup tiket #${tiketId} dengan kategori "${selectedKategori}"?`)) {
-        return;
-      }
+  if (!confirm(`Apakah Anda yakin ingin menutup tiket #${tiketId} dengan kategori "${selectedKategori}"?`)) {
+    return;
+  }
 
-      try {
-        const res = await fetch('/api/update-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            tiket_id: tiketId, 
-            status: 'CLOSED',
-            kategori_pekerjaan: selectedKategori 
-          })
-        });
+  try {
+    const res = await fetch('/api/update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        tiket_id: String(tiketId), // Pastikan format tiket_id bertipe string/terdefinisi
+        status: 'CLOSED',          // Status wajib diisi
+        kategori_pekerjaan: selectedKategori 
+      })
+    });
 
-        const data = await res.json();
-        if (res.ok && data.success) {
-          alert(`✅ Tiket #${tiketId} berhasil di-Close.`);
-          await loadTickets();
-        } else {
-          alert(data.error || 'Gagal mengubah status');
-        }
-      } catch (e) {
-        alert('Gagal menghubungi server');
-      }
+    const data = await res.json();
+    if (res.ok && data.success) {
+      alert(`✅ Tiket #${tiketId} berhasil di-Close.`);
+      await loadTickets();
+    } else {
+      alert(data.error || 'Gagal mengubah status');
     }
+  } catch (e) {
+    alert('Gagal menghubungi server');
+  }
+}
 
     async function openChatModal(tiketId) {
       currentActiveTiket = rawTicketsData.find(t => t.tiket_id === tiketId);
