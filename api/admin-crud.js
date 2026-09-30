@@ -1,136 +1,122 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { 
-  getFirestore, 
-  collection, 
-  onSnapshot, 
-  doc, 
-  getDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  orderBy 
-} from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+// Database sementara (In-Memory)
+let permintaanDB = [
+  { id: 101, pemohon: 'Ahmad Fauzi', namaPermintaan: 'Laptop Workstation', jumlah: 2, status: 'Diproses', keterangan: 'Untuk tim dev baru' },
+  { id: 102, pemohon: 'Siti Rahma', namaPermintaan: 'Monitor 27 Inch', jumlah: 1, status: 'Disetujui', keterangan: 'Ganti monitor rusak' },
+  { id: 103, pemohon: 'Budi Santoso', namaPermintaan: 'Kursi Ergonomis', jumlah: 5, status: 'Pending', keterangan: 'Kebutuhan ruang meeting' }
+];
 
-// Konfigurasi Firebase Anda
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+export default async function handler(req, res) {
+  // Atur Header CORS jika diperlukan
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-// Load Data Realtime ke Tabel
-function loadCrudData() {
-  const q = query(collection(db, 'permintaan'), orderBy('timestamp_created', 'desc'));
-  
-  onSnapshot(q, (snapshot) => {
-    const tbody = document.getElementById('crudTableBody');
-    if (snapshot.empty) {
-      tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">Tidak ada data tiket.</td></tr>`;
-      return;
+  const { method, body } = req;
+
+  try {
+    switch (method) {
+      // 1. GET: Ambil Semua Data Permintaan
+      case 'GET':
+        return res.status(200).json({
+          success: true,
+          data: permintaanDB
+        });
+
+      // 2. POST: Tambah Permintaan Baru
+      case 'POST': {
+        const { pemohon, namaPermintaan, jumlah, status, keterangan } = body;
+
+        if (!pemohon || !namaPermintaan || !jumlah) {
+          return res.status(400).json({
+            success: false,
+            message: 'Pemohon, Nama Permintaan, dan Jumlah wajib diisi!'
+          });
+        }
+
+        const newItem = {
+          id: Date.now(), // Generate ID unik berdasarkan timestamp
+          pemohon,
+          namaPermintaan,
+          jumlah: Number(jumlah),
+          status: status || 'Pending',
+          keterangan: keterangan || ''
+        };
+
+        permintaanDB.unshift(newItem); // Tambahkan ke daftar teratas
+
+        return res.status(201).json({
+          success: true,
+          message: 'Data permintaan berhasil ditambahkan',
+          data: newItem
+        });
+      }
+
+      // 3. PUT: Update Permintaan
+      case 'PUT': {
+        const { id, pemohon, namaPermintaan, jumlah, status, keterangan } = body;
+
+        const index = permintaanDB.findIndex((item) => item.id === Number(id));
+
+        if (index === -1) {
+          return res.status(404).json({
+            success: false,
+            message: 'Data permintaan tidak ditemukan'
+          });
+        }
+
+        permintaanDB[index] = {
+          ...permintaanDB[index],
+          pemohon: pemohon || permintaanDB[index].pemohon,
+          namaPermintaan: namaPermintaan || permintaanDB[index].namaPermintaan,
+          jumlah: jumlah !== undefined ? Number(jumlah) : permintaanDB[index].jumlah,
+          status: status || permintaanDB[index].status,
+          keterangan: keterangan !== undefined ? keterangan : permintaanDB[index].keterangan
+        };
+
+        return res.status(200).json({
+          success: true,
+          message: 'Data permintaan berhasil diperbarui',
+          data: permintaanDB[index]
+        });
+      }
+
+      // 4. DELETE: Hapus Permintaan
+      case 'DELETE': {
+        const { id } = body;
+
+        const index = permintaanDB.findIndex((item) => item.id === Number(id));
+
+        if (index === -1) {
+          return res.status(404).json({
+            success: false,
+            message: 'Data permintaan tidak ditemukan'
+          });
+        }
+
+        permintaanDB = permintaanDB.filter((item) => item.id !== Number(id));
+
+        return res.status(200).json({
+          success: true,
+          message: 'Data permintaan berhasil dihapus'
+        });
+      }
+
+      default:
+        res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+        return res.status(405).json({
+          success: false,
+          message: `Method ${method} tidak diizinkan`
+        });
     }
-
-    let rowsHtml = '';
-    snapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const id = docSnap.id;
-      
-      const badgeColor = 
-        data.status === 'CLOSED' ? 'bg-emerald-100 text-emerald-700' :
-        data.status === 'PROGRESS' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700';
-
-      rowsHtml += `
-        <tr class="hover:bg-slate-50/80 transition">
-          <td class="p-4 font-mono text-xs font-semibold text-slate-600">${id.substring(0, 8)}...</td>
-          <td class="p-4"><span class="font-bold text-xs bg-slate-100 px-2 py-1 rounded-md">${data.segmen || '-'}</span></td>
-          <td class="p-4">${data.nama_teknisi || '-'}</td>
-          <td class="p-4 max-w-xs truncate" title="${data.pesan || ''}">${data.pesan || '-'}</td>
-          <td class="p-4">
-            <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${badgeColor}">
-              ${data.status || 'OPEN'}
-            </span>
-          </td>
-          <td class="p-4 text-slate-500">${data.keterangan || '-'}</td>
-          <td class="p-4 text-center">
-            <div class="flex justify-center gap-2">
-              <button onclick="openEditModal('${id}')" class="px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 shadow-sm transition">✏️ Edit</button>
-              <button onclick="deleteTicket('${id}')" class="px-3 py-1.5 bg-rose-600 text-white text-xs font-medium rounded-lg hover:bg-rose-700 shadow-sm transition">🗑️ Hapus</button>
-            </div>
-          </td>
-        </tr>
-      `;
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan pada server',
+      error: error.message
     });
-    tbody.innerHTML = rowsHtml;
-  });
+  }
 }
-
-// Buka Modal Edit
-window.openEditModal = async function(docId) {
-  try {
-    const docSnap = await getDoc(doc(db, 'permintaan', docId));
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      document.getElementById('editDocId').value = docId;
-      document.getElementById('editStatus').value = data.status || 'OPEN';
-      document.getElementById('editSegmen').value = data.segmen || 'B2C';
-      document.getElementById('editPesan').value = data.pesan || '';
-      document.getElementById('editKeterangan').value = data.keterangan || '';
-      
-      const modal = document.getElementById('editModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-  } catch (err) {
-    alert('Gagal mengambil data: ' + err.message);
-  }
-};
-
-// Tutup Modal
-window.closeEditModal = function() {
-  const modal = document.getElementById('editModal');
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-};
-
-// Simpan Perubahan (Update)
-window.saveEditTicket = async function() {
-  const docId = document.getElementById('editDocId').value;
-  const newStatus = document.getElementById('editStatus').value;
-  const newSegmen = document.getElementById('editSegmen').value;
-  const newPesan = document.getElementById('editPesan').value;
-  const newKeterangan = document.getElementById('editKeterangan').value;
-
-  try {
-    await updateDoc(doc(db, 'permintaan', docId), {
-      status: newStatus,
-      segmen: newSegmen,
-      pesan: newPesan,
-      keterangan: newKeterangan
-    });
-    
-    alert('Data berhasil diperbarui!');
-    window.closeEditModal();
-  } catch (err) {
-    alert('Gagal memperbarui data: ' + err.message);
-  }
-};
-
-// Hapus Tiket (Delete)
-window.deleteTicket = async function(docId) {
-  if (confirm('Apakah Anda yakin ingin menghapus data ini secara permanen?')) {
-    try {
-      await deleteDoc(doc(db, 'permintaan', docId));
-      alert('Data berhasil dihapus!');
-    } catch (err) {
-      alert('Gagal menghapus data: ' + err.message);
-    }
-  }
-};
-
-// Jalankan pengambilan data awal
-loadCrudData();
