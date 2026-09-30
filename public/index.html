@@ -105,7 +105,16 @@
       </div>
     </div>
   </div>
-
+  
+<!-- MODAL LIGHTBOX / ZOOM GAMBAR -->
+<div id="image-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[60]" onclick="closeImageModal()">
+  <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center justify-center">
+    <!-- Tombol Close -->
+    <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white text-2xl font-bold hover:text-gray-300">&times; Tutup</button>
+    <!-- Element Gambar Zoom -->
+    <img id="modal-zoom-img" src="" class="max-w-full max-h-[85vh] rounded-lg object-contain shadow-2xl" onclick="event.stopPropagation()">
+  </div>
+</div>
   <!-- CHAT MODAL -->
   <div id="chat-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl flex flex-col h-[85vh]">
