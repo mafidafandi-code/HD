@@ -16,7 +16,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Helper untuk mendeteksi segmen dan hashtag
+// Helper untuk mendeteksi segmen dan hashtag dari pesan
 function detectSegmen(text = '') {
   const lower = text.toLowerCase();
   if (lower.includes('#moban')) return { code: 'B2C', tag: '#moban' };
@@ -25,10 +25,11 @@ function detectSegmen(text = '') {
   return null;
 }
 
-// Helper untuk mengekstrak file_id dan menggabungkannya dengan koma
+// Helper untuk mengambil file_id dari foto/video/dokumen
 function extractFileIds(message) {
   const fileIds = [];
   if (message.photo && message.photo.length > 0) {
+    // Ambil resolusi foto tertinggi
     fileIds.push(message.photo[message.photo.length - 1].file_id);
   }
   if (message.video) {
@@ -61,29 +62,60 @@ export default async function handler(req, res) {
 
         const text = message.text || message.caption || '';
         const segmenInfo = detectSegmen(text);
-        const fileIdString = extractFileIds(message);
+        const currentFileId = extractFileIds(message);
+        const mediaGroupId = message.media_group_id || null;
 
-        // ==========================================
-        // A. BARIS DATA BARU: TIKET UTAMA (Pesan ber-Hashtag)
-        // ==========================================
+        // ====================================================
+        // 1. PENANGANAN MEDIA GROUP / ALBUM FOTO BANYAK
+        // ====================================================
+        if (mediaGroupId && currentFileId) {
+          // Cek apakah foto/file dari album ini sudah terdaftar sebelumnya
+          const groupSnapshot = await db.collection('permintaan')
+            .where('chat_id', '==', message.chat.id)
+            .where('media_group_id', '==', mediaGroupId)
+            .limit(1)
+            .get();
+
+          if (!groupSnapshot.empty) {
+            // Jika ini foto ke-2, ke-3, dst dalam album yang sama
+            const existingDoc = groupSnapshot.docs[0];
+            const existingData = existingDoc.data();
+
+            const oldFileIds = existingData.file_id ? existingData.file_id.split(',') : [];
+            if (!oldFileIds.includes(currentFileId)) {
+              oldFileIds.push(currentFileId);
+              const updatedFileIds = oldFileIds.join(',');
+
+              // Update baris yang sama dengan menambahkan file_id dipisahkan koma
+              await db.collection('permintaan').doc(existingDoc.id).update({
+                file_id: updatedFileIds
+              });
+            }
+            return; // Selesai, tidak membuat dokumen baru di Firestore
+          }
+        }
+
+        // ====================================================
+        // 2. PEMBUATAN TIKET UTAMA (Pesan Baru dengan Hashtag)
+        // ====================================================
         if (segmenInfo) {
-          // Buat docRef dulu untuk mendapatkan ID Unik (id_permintaan)
           const newDocRef = db.collection('permintaan').doc();
           const generatedId = newDocRef.id;
 
           const mainTicketData = {
             id_permintaan: generatedId,
-            tiket_id: generatedId, // Untuk Tiket Utama, tiket_id diisi ID ini sendiri
+            tiket_id: generatedId, // tiket_id diisi ID dokumen ini sendiri
             msg_type: 'UTAMA',
             sender_type: 'TELEGRAM',
             chat_id: message.chat.id,
             thread_id: message.message_thread_id || null,
             message_id: message.message_id,
             reply_to_message_id: null,
+            media_group_id: mediaGroupId,
             segmen: segmenInfo.code,
             kategori_pekerjaan: segmenInfo.tag,
             pesan: text,
-            file_id: fileIdString,
+            file_id: currentFileId,
             id_telegram_teknisi: message.from.id,
             nama_teknisi: [message.from.first_name, message.from.last_name].filter(Boolean).join(' '),
             username_teknisi: message.from.username || null,
@@ -105,70 +137,77 @@ export default async function handler(req, res) {
           return;
         }
 
-        // ==========================================
-        // B. BARIS DATA BARU: BALASAN (Reply Message)
-        // ==========================================
+        // ====================================================
+        // 3. PESAN BALASAN / REPLY (Ke Pesan Utama ATAU Balasan Lain)
+        // ====================================================
         if (message.reply_to_message) {
           const parentMessageId = message.reply_to_message.message_id;
 
-          // 1. Cari Tiket Utama di mana chat_id dan message_id cocok dengan pesan yang di-reply
+          // Cari pesan induk tanpa membatasi msg_type ('UTAMA' maupun 'BALASAN' bisa direply)
           const snapshot = await db.collection('permintaan')
             .where('chat_id', '==', message.chat.id)
             .where('message_id', '==', parentMessageId)
-            .where('msg_type', '==', 'UTAMA')
             .limit(1)
             .get();
 
           if (!snapshot.empty) {
-            const mainDoc = snapshot.docs[0];
-            const mainData = mainDoc.data();
-            const parentTiketId = mainData.tiket_id;
+            const parentDoc = snapshot.docs[0];
+            const parentData = parentDoc.data();
+            const parentTiketId = parentData.tiket_id; // Selalu mengacu pada tiket_id yang sama
 
             const newReplyRef = db.collection('permintaan').doc();
             const replyGeneratedId = newReplyRef.id;
 
             const replyTicketData = {
               id_permintaan: replyGeneratedId,
-              tiket_id: parentTiketId, // Merujuk ke tiket_id Tiket Utama
+              tiket_id: parentTiketId, // Menyambung ke tiket_id utama
               msg_type: 'BALASAN',
               sender_type: 'TELEGRAM',
               chat_id: message.chat.id,
               thread_id: message.message_thread_id || null,
               message_id: message.message_id,
               reply_to_message_id: parentMessageId,
-              segmen: mainData.segmen,
-              kategori_pekerjaan: mainData.kategori_pekerjaan,
+              media_group_id: mediaGroupId,
+              segmen: parentData.segmen,
+              kategori_pekerjaan: parentData.kategori_pekerjaan,
               pesan: text,
-              file_id: fileIdString,
+              file_id: currentFileId,
               id_telegram_teknisi: message.from.id,
               nama_teknisi: [message.from.first_name, message.from.last_name].filter(Boolean).join(' '),
               username_teknisi: message.from.username || null,
               id_telegram_hd: null,
-              status: null, // Pesan balasan tidak perlu status
+              status: null,
               keterangan: null,
               timestamp_created: admin.firestore.FieldValue.serverTimestamp(),
               timestamp_taken: null,
               timestamp_close: null
             };
 
-            // Simpan baris balasan baru
             await newReplyRef.set(replyTicketData);
 
-            // 2. RE-OPEN TIKET UTAMA: Kembalikan status Tiket Utama ke 'OPEN' & reset timestamp_close
-            await db.collection('permintaan').doc(mainDoc.id).update({
-              status: 'OPEN',
-              timestamp_close: null
-            });
+            // Re-Open Tiket Utama jika teknisi mengirim balasan baru
+            const mainSnapshot = await db.collection('permintaan')
+              .where('tiket_id', '==', parentTiketId)
+              .where('msg_type', '==', 'UTAMA')
+              .limit(1)
+              .get();
+
+            if (!mainSnapshot.empty) {
+              await db.collection('permintaan').doc(mainSnapshot.docs[0].id).update({
+                status: 'OPEN',
+                timestamp_close: null
+              });
+            }
 
             try { await ctx.react('👀'); } catch (e) {}
             return;
           }
         }
 
-        // ==========================================
-        // C. PESAN DITOLAK (Tanpa Hashtag & Bukan Reply Tiket Valid)
-        // ==========================================
-        await ctx.reply('⚠️ Mohon sertakan hashtag segmen (#moban, #helprekan, #tolong) untuk membuat tiket baru, atau balas (reply) ke pesan tiket yang sudah ada.', {
+        // ====================================================
+        // 4. PESAN DITOLAK (Jika tanpa hashtag dan bukan reply tiket valid)
+        // ====================================================
+        await ctx.reply('⚠️ Mohon sertakan hashtag segmen (#moban, #helprekan, #tolong) untuk membuat tiket baru, atau balas (reply) ke pesan tiket/balasan yang sudah ada.', {
           reply_to_message_id: message.message_id
         });
 
