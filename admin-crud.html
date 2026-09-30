@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kelola Data Permintaan (CRUD)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<bg-slate-50 text-slate-800 min-h-screen p-4 md:p-8">
+
+  <div class="max-w-6xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">🛠️ Kelola Data Permintaan</h1>
+        <p class="text-sm text-slate-500">Edit atau hapus data tiket permintaan secara manual</p>
+      </div>
+      <a href="index.html" class="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-xl hover:bg-slate-200 transition">
+        ← Kembali ke Dashboard
+      </a>
+    </div>
+
+    <!-- Tabel Data Tiket -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 border-b border-slate-100 text-slate-500 font-semibold uppercase text-xs">
+            <tr>
+              <th class="p-4">ID Tiket</th>
+              <th class="p-4">Segmen</th>
+              <th class="p-4">Teknisi</th>
+              <th class="p-4">Pesan</th>
+              <th class="p-4">Status</th>
+              <th class="p-4">Keterangan</th>
+              <th class="p-4 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="crudTableBody" class="divide-y divide-slate-100">
+            <tr>
+              <td colspan="7" class="p-8 text-center text-slate-400">Memuat data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit Tiket -->
+  <div id="editModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-lg font-bold text-slate-800">✏️ Edit Data Tiket</h3>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+      </div>
+      
+      <input type="hidden" id="editDocId">
+      
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Status</label>
+          <select id="editStatus" class="w-full border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="OPEN">OPEN</option>
+            <option value="PROGRESS">PROGRESS</option>
+            <option value="CLOSED">CLOSED</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Segmen</label>
+          <select id="editSegmen" class="w-full border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="B2C">B2C (#moban)</option>
+            <option value="B2B">B2B (#helprekan)</option>
+            <option value="PROVI">PROVI (#tolong)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Pesan / Permintaan</label>
+          <textarea id="editPesan" rows="3" class="w-full border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Keterangan / Catatan HD</label>
+          <input type="text" id="editKeterangan" class="w-full border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Opsional">
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeEditModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+        <button onclick="saveEditTicket()" class="px-4 py-2 text-sm bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm transition">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load JS Terpisah -->
+  //<script type="module" src="admin-crud.js"></script>
+  <script type="module" src="api/admin-crud.js"></script>
+</body>
+</html>
