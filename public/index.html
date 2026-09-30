@@ -109,12 +109,11 @@
 <!-- MODAL LIGHTBOX / ZOOM GAMBAR -->
 <div id="image-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[60]" onclick="closeImageModal()">
   <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center justify-center">
-    <!-- Tombol Close -->
     <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white text-2xl font-bold hover:text-gray-300">&times; Tutup</button>
-    <!-- Element Gambar Zoom -->
     <img id="modal-zoom-img" src="" class="max-w-full max-h-[85vh] rounded-lg object-contain shadow-2xl" onclick="event.stopPropagation()">
   </div>
 </div>
+
   <!-- CHAT MODAL -->
   <div id="chat-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl flex flex-col h-[85vh]">
@@ -135,7 +134,6 @@
       </div>
 
       <div class="p-3 border-t bg-white rounded-b-xl relative">
-        <!-- LOADING OVERLAY DENGAN INDIKATOR -->
         <div id="chat-loading" class="hidden absolute inset-0 bg-white/90 flex items-center justify-center z-10 rounded-b-xl">
           <div class="flex items-center space-x-3">
             <svg class="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -225,7 +223,6 @@
       switchTab('open');
       loadTickets();
 
-      // Poll data setiap 5 detik agar realtime tanpa mendaftarkan Firebase SDK di client
       if (fetchInterval) clearInterval(fetchInterval);
       fetchInterval = setInterval(loadTickets, 5000);
     }
@@ -299,36 +296,132 @@
         const div = document.createElement('div');
         div.className = "bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4";
         const dateStr = t.timestamp_created ? new Date(t.timestamp_created).toLocaleString('id-ID') : '-';
+        const katSaatIni = t.kategori_pekerjaan || '';
 
         div.innerHTML = `
           <div class="space-y-1">
             <div class="flex items-center space-x-2">
               <span class="font-bold text-blue-600">#${t.tiket_id}</span>
-              <span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-mono">${t.kategori_pekerjaan || ''}</span>
+              ${katSaatIni ? `<span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-mono">${katSaatIni}</span>` : ''}
               ${t.nama_hd ? `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">HD: ${t.nama_hd}</span>` : ''}
             </div>
             <p class="text-gray-800 font-medium">${escapeHtml(t.pesan)}</p>
             <p class="text-xs text-gray-400">Teknisi: <span class="font-semibold text-gray-600">${t.nama_teknisi}</span> | Waktu: ${dateStr}</p>
           </div>
-          <!-- HTML Card Tiket -->
-<div class="flex items-center gap-2">
 
-  <!-- 2. TOMBOL BALAS -->
-  <button onclick="openChatModal('${ticket.tiket_id}')" 
-          class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-blue-700">
-    💬 Balas
-  </button>
+          <!-- HTML Card Tiket & Action Buttons -->
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Dropdown Kategori Pekerjaan -->
+            <select id="select-kategori-${t.tiket_id}" 
+                    onchange="updateKategoriPekerjaan('${t.tiket_id}', this.value)"
+                    class="text-xs border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">-- Pilih Kategori Pekerjaan --</option>
+              <option value="/MO" ${katSaatIni === '/MO' ? 'selected' : ''}>/MO</option>
+              <option value="/DO" ${katSaatIni === '/DO' ? 'selected' : ''}>/DO</option>
+              <option value="/AO" ${katSaatIni === '/AO' ? 'selected' : ''}>/AO</option>
+              <option value="/PDA" ${katSaatIni === '/PDA' ? 'selected' : ''}>/PDA</option>
+              <option value="/Config" ${katSaatIni === '/Config' ? 'selected' : ''}>/Config</option>
+              <option value="/Reboot" ${katSaatIni === '/Reboot' ? 'selected' : ''}>/Reboot</option>
+              <option value="/SSID/Pass" ${katSaatIni === '/SSID/Pass' ? 'selected' : ''}>/SSID/Pass</option>
+              <option value="/Embassy" ${katSaatIni === '/Embassy' ? 'selected' : ''}>/Embassy</option>
+              <option value="/CekPort" ${katSaatIni === '/CekPort' ? 'selected' : ''}>/CekPort</option>
+              <option value="/Downtime" ${katSaatIni === '/Downtime' ? 'selected' : ''}>/Downtime</option>
+              <option value="/Share" ${katSaatIni === '/Share' ? 'selected' : ''}>/Share</option>
+              <option value="/CekInet" ${katSaatIni === '/CekInet' ? 'selected' : ''}>/CekInet</option>
+              <option value="/Client" ${katSaatIni === '/Client' ? 'selected' : ''}>/Client</option>
+              <option value="/OpenLAN" ${katSaatIni === '/OpenLAN' ? 'selected' : ''}>/OpenLAN</option>
+              <option value="/DetekONT" ${katSaatIni === '/DetekONT' ? 'selected' : ''}>/DetekONT</option>
+              <option value="/Close" ${katSaatIni === '/Close' ? 'selected' : ''}>/Close</option>
+              <option value="/FUP" ${katSaatIni === '/FUP' ? 'selected' : ''}>/FUP</option>
+              <option value="/CekPaket" ${katSaatIni === '/CekPaket' ? 'selected' : ''}>/CekPaket</option>
+              <option value="/Bukis" ${katSaatIni === '/Bukis' ? 'selected' : ''}>/Bukis</option>
+              <option value="/Unbindusee" ${katSaatIni === '/Unbindusee' ? 'selected' : ''}>/Unbindusee</option>
+              <option value="/Cekpayment" ${katSaatIni === '/Cekpayment' ? 'selected' : ''}>/Cekpayment</option>
+              <option value="/Dispatch" ${katSaatIni === '/Dispatch' ? 'selected' : ''}>/Dispatch</option>
+              <option value="/Shutdown" ${katSaatIni === '/Shutdown' ? 'selected' : ''}>/Shutdown</option>
+              <option value="/Assign" ${katSaatIni === '/Assign' ? 'selected' : ''}>/Assign</option>
+              <option value="/Noshutdown" ${katSaatIni === '/Noshutdown' ? 'selected' : ''}>/Noshutdown</option>
+              <option value="/Openportlan" ${katSaatIni === '/Openportlan' ? 'selected' : ''}>/Openportlan</option>
+              <option value="/PelurusanBW" ${katSaatIni === '/PelurusanBW' ? 'selected' : ''}>/PelurusanBW</option>
+              <option value="/Redaman" ${katSaatIni === '/Redaman' ? 'selected' : ''}>/Redaman</option>
+            </select>
 
-  <!-- 3. TOMBOL TANDAI CLOSED -->
-  <button onclick="handleCloseTicket('${ticket.tiket_id}')" 
-          class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-emerald-700">
-    ✅ Tandai Closed
-  </button>
+            <!-- Tombol Balas -->
+            <button onclick="openChatModal('${t.tiket_id}')" 
+                    class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-blue-700">
+              💬 Balas
+            </button>
 
-</div>
+            <!-- Tombol Tandai Closed -->
+            ${activeTab !== 'closed' ? `
+            <button onclick="handleCloseTicket('${t.tiket_id}')" 
+                    class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-emerald-700">
+              ✅ Tandai Closed
+            </button>` : ''}
+          </div>
         `;
         container.appendChild(div);
       });
+    }
+
+    async function updateKategoriPekerjaan(tiketId, kategoriBaru) {
+      if (!kategoriBaru) return;
+
+      try {
+        const res = await fetch('/api/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tiket_id: tiketId, kategori_pekerjaan: kategoriBaru })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          const ticket = rawTicketsData.find(item => item.tiket_id === tiketId);
+          if (ticket) ticket.kategori_pekerjaan = kategoriBaru;
+        } else {
+          alert(data.error || 'Gagal menyimpan kategori');
+        }
+      } catch (err) {
+        console.error('Error update kategori:', err);
+      }
+    }
+
+    async function handleCloseTicket(tiketId) {
+      const selectElem = document.getElementById(`select-kategori-${tiketId}`);
+      const selectedKategori = selectElem ? selectElem.value : '';
+      const hashtagBawaan = ['#moban', '#helprekan', '#tolong', ''];
+
+      if (!selectedKategori || hashtagBawaan.includes(selectedKategori.toLowerCase())) {
+        alert('⚠️ Tiket tidak dapat di-Close!\nHarap pilih Kategori Pekerjaan pada dropdown terlebih dahulu.');
+        if (selectElem) selectElem.focus();
+        return;
+      }
+
+      if (!confirm(`Apakah Anda yakin ingin menutup tiket #${tiketId} dengan kategori "${selectedKategori}"?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            tiket_id: tiketId, 
+            status: 'CLOSED',
+            kategori_pekerjaan: selectedKategori 
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          alert(`✅ Tiket #${tiketId} berhasil di-Close.`);
+          await loadTickets();
+        } else {
+          alert(data.error || 'Gagal mengubah status');
+        }
+      } catch (e) {
+        alert('Gagal menghubungi server');
+      }
     }
 
     async function openChatModal(tiketId) {
@@ -345,80 +438,75 @@
       loadChatMessages(tiketId);
     }
 
-    // Fungsi untuk memuka Gambar di Modal Zoom
-function openImageModal(url) {
-  document.getElementById('modal-zoom-img').src = url;
-  document.getElementById('image-modal').classList.remove('hidden');
-}
-
-// Fungsi untuk menutup Modal Zoom
-function closeImageModal() {
-  document.getElementById('image-modal').classList.add('hidden');
-  document.getElementById('modal-zoom-img').src = '';
-}
-
-    
-    
-async function loadChatMessages(tiketId) {
-  try {
-    const res = await fetch(`/api/tickets?action=get_chat&tiket_id=${encodeURIComponent(tiketId)}`);
-    const data = await res.json();
-
-    if (res.ok && data.success) {
-      const historyContainer = document.getElementById('chat-history');
-      historyContainer.innerHTML = '';
-
-      for (const msg of data.messages) {
-        const isHD = msg.sender_type === 'HD';
-        const bubble = document.createElement('div');
-        bubble.className = `flex ${isHD ? 'justify-end' : 'justify-start'}`;
-
-        let imagesHtml = '';
-        if (msg.file_id) {
-          try {
-            const imgRes = await fetch(`/api/get-file?file_id=${encodeURIComponent(msg.file_id)}`);
-            const imgData = await imgRes.json();
-
-            if (imgRes.ok && imgData.urls && imgData.urls.length > 0) {
-              // Ganti tag <a> dengan onclick event menuju openImageModal
-              const imgTags = imgData.urls.map(url => `
-                <div class="block overflow-hidden rounded-lg border border-black/10">
-                  <img src="${url}" 
-                       onclick="openImageModal('${url}')" 
-                       class="w-full h-32 object-cover hover:scale-105 transition duration-200 cursor-zoom-in">
-                </div>
-              `).join('');
-
-              imagesHtml = `
-                <div class="grid grid-cols-2 gap-2 mb-2">
-                  ${imgTags}
-                </div>
-              `;
-            }
-          } catch (e) {
-            imagesHtml = `<p class="text-xs text-red-400 italic mb-1">[Gagal memuat gambar]</p>`;
-          }
-        }
-
-        bubble.innerHTML = `
-          <div class="max-w-[80%] rounded-lg p-3 ${isHD ? 'bg-blue-600 text-white' : 'bg-white border text-gray-800'} shadow-sm">
-            <p class="text-xs font-bold ${isHD ? 'text-blue-100' : 'text-blue-600'} mb-1">${isHD ? (msg.nama_hd || 'HD') : msg.nama_teknisi}</p>
-            ${imagesHtml}
-            ${msg.pesan ? `<p class="text-sm whitespace-pre-wrap">${escapeHtml(msg.pesan)}</p>` : ''}
-            <span class="text-[10px] block text-right mt-1 opacity-70">
-              ${msg.timestamp_created ? new Date(msg.timestamp_created).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : ''}
-            </span>
-          </div>
-        `;
-        historyContainer.appendChild(bubble);
-      }
-
-      historyContainer.scrollTop = historyContainer.scrollHeight;
+    function openImageModal(url) {
+      document.getElementById('modal-zoom-img').src = url;
+      document.getElementById('image-modal').classList.remove('hidden');
     }
-  } catch (err) {
-    console.error("Gagal memuat chat:", err);
-  }
-}
+
+    function closeImageModal() {
+      document.getElementById('image-modal').classList.add('hidden');
+      document.getElementById('modal-zoom-img').src = '';
+    }
+
+    async function loadChatMessages(tiketId) {
+      try {
+        const res = await fetch(`/api/tickets?action=get_chat&tiket_id=${encodeURIComponent(tiketId)}`);
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          const historyContainer = document.getElementById('chat-history');
+          historyContainer.innerHTML = '';
+
+          for (const msg of data.messages) {
+            const isHD = msg.sender_type === 'HD';
+            const bubble = document.createElement('div');
+            bubble.className = `flex ${isHD ? 'justify-end' : 'justify-start'}`;
+
+            let imagesHtml = '';
+            if (msg.file_id) {
+              try {
+                const imgRes = await fetch(`/api/get-file?file_id=${encodeURIComponent(msg.file_id)}`);
+                const imgData = await imgRes.json();
+
+                if (imgRes.ok && imgData.urls && imgData.urls.length > 0) {
+                  const imgTags = imgData.urls.map(url => `
+                    <div class="block overflow-hidden rounded-lg border border-black/10">
+                      <img src="${url}" 
+                           onclick="openImageModal('${url}')" 
+                           class="w-full h-32 object-cover hover:scale-105 transition duration-200 cursor-zoom-in">
+                    </div>
+                  `).join('');
+
+                  imagesHtml = `
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                      ${imgTags}
+                    </div>
+                  `;
+                }
+              } catch (e) {
+                imagesHtml = `<p class="text-xs text-red-400 italic mb-1">[Gagal memuat gambar]</p>`;
+              }
+            }
+
+            bubble.innerHTML = `
+              <div class="max-w-[80%] rounded-lg p-3 ${isHD ? 'bg-blue-600 text-white' : 'bg-white border text-gray-800'} shadow-sm">
+                <p class="text-xs font-bold ${isHD ? 'text-blue-100' : 'text-blue-600'} mb-1">${isHD ? (msg.nama_hd || 'HD') : msg.nama_teknisi}</p>
+                ${imagesHtml}
+                ${msg.pesan ? `<p class="text-sm whitespace-pre-wrap">${escapeHtml(msg.pesan)}</p>` : ''}
+                <span class="text-[10px] block text-right mt-1 opacity-70">
+                  ${msg.timestamp_created ? new Date(msg.timestamp_created).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : ''}
+                </span>
+              </div>
+            `;
+            historyContainer.appendChild(bubble);
+          }
+
+          historyContainer.scrollTop = historyContainer.scrollHeight;
+        }
+      } catch (err) {
+        console.error("Gagal memuat chat:", err);
+      }
+    }
 
     function closeChatModal() {
       document.getElementById('chat-modal').classList.add('hidden');
@@ -499,26 +587,6 @@ async function loadChatMessages(tiketId) {
         alert('Gagal mengirim balasan');
       } finally {
         loading.classList.add('hidden');
-      }
-    }
-
-    async function markAsClosed(tiketId) {
-      if (!confirm('Close tiket ini?')) return;
-
-      try {
-        const res = await fetch('/api/update-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tiket_id: tiketId, status: 'CLOSED' })
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          await loadTickets();
-        } else {
-          alert(data.error || 'Gagal mengubah status');
-        }
-      } catch (e) {
-        alert('Gagal menghubungi server');
       }
     }
 
